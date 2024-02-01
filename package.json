@@ -1,0 +1,10 @@
+{
+	"devDependencies": {
+		"@total-typescript/ts-reset": "^0.5.1",
+		"@types/node": "^20.11.14",
+		"typescript": "^5.3.3"
+	},
+	"dependencies": {
+		"@samual/lib": "^0.9.1"
+	}
+}
