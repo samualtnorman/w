@@ -4,7 +4,7 @@ import { TokenTag, tokenIs, tokenToString, type Token } from "./tokenise"
 export enum ExpressionTag { Integer = 1, Identifier, Abstraction, Application, Let, True, False }
 export type IntegerExpression = { tag: ExpressionTag.Integer, value: bigint }
 export type IdentifierExpression = { tag: ExpressionTag.Identifier, name: string }
-export type AbstractionExpression = { tag: ExpressionTag.Abstraction, parameterName: string, body: Expression }
+export type AbstractionExpression = { tag: ExpressionTag.Abstraction, argumentName: string, body: Expression }
 export type ApplicationExpression = { tag: ExpressionTag.Application, callee: Expression, argument: Expression }
 export type LetExpression = { tag: ExpressionTag.Let, name: string, value: Expression, body: Expression }
 export type TrueExpression = { tag: ExpressionTag.True }
@@ -13,7 +13,7 @@ export type FalseExpression = { tag: ExpressionTag.False }
 export type Expression = IntegerExpression | IdentifierExpression | AbstractionExpression | ApplicationExpression |
 	LetExpression | TrueExpression | FalseExpression
 
-export function parse(tokens: Token[], index: { $: number }): Expression {
+export function parse(tokens: Token[], index: { $: number } = { $: 0 }): Expression {
 	let expression = maybeParse()
 
 	if (!expression) {
@@ -41,7 +41,7 @@ export function parse(tokens: Token[], index: { $: number }): Expression {
 					return { tag: ExpressionTag.Identifier, name: firstToken.data }
 
 				index.$++
-				return { tag: ExpressionTag.Abstraction, parameterName: firstToken.data, body: parse(tokens, index) }
+				return { tag: ExpressionTag.Abstraction, argumentName: firstToken.data, body: parse(tokens, index) }
 			}
 
 			case TokenTag.False: {
