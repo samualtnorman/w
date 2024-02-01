@@ -5,6 +5,7 @@
 		"typescript": "^5.3.3"
 	},
 	"dependencies": {
-		"@samual/lib": "^0.9.1"
+		"@samual/lib": "^0.9.1",
+		"binaryen": "^116.0.0"
 	}
 }

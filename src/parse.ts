@@ -2,7 +2,7 @@ import { isRecord } from "@samual/lib/isRecord"
 import { TokenTag, tokenIs, tokenToString, type Token } from "./tokenise"
 
 export enum ExpressionTag { Integer = 1, Identifier, Abstraction, Application, Let, True, False }
-export type IntegerExpression = { tag: ExpressionTag.Integer, value: bigint }
+export type IntegerExpression = { tag: ExpressionTag.Integer, value: number }
 export type IdentifierExpression = { tag: ExpressionTag.Identifier, name: string }
 export type AbstractionExpression = { tag: ExpressionTag.Abstraction, argumentName: string, body: Expression }
 export type ApplicationExpression = { tag: ExpressionTag.Application, callee: Expression, argument: Expression }
@@ -56,7 +56,7 @@ export function parse(tokens: Token[], index: { $: number } = { $: 0 }): Express
 
 			case TokenTag.Integer: {
 				index.$++
-				return { tag: ExpressionTag.Integer, value: BigInt(firstToken.data) }
+				return { tag: ExpressionTag.Integer, value: parseInt(firstToken.data, 10) }
 			}
 
 			case TokenTag.OpenBracket: {
@@ -90,7 +90,7 @@ export function parse(tokens: Token[], index: { $: number } = { $: 0 }): Express
 	}
 }
 
-export function expressionToString(expression: Record<string, unknown>, indentLevel: number): string {
+export function expressionToString(expression: Record<string, unknown>, indentLevel: number = 0): string {
 	const { tag, ...properties } = expression
 	let result = ``
 
