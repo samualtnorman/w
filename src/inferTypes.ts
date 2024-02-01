@@ -9,7 +9,8 @@ export type TypeSchemeType = { tag: TypeTag.TypeScheme, bound: string[], type: T
 export type Type = BoolType | IntType | TypeVariableType | FunctionType | TypeSchemeType
 export type TypeEnvironment = Record<string, TypeSchemeType>
 export type Substitution = Record<string, Type>
-export type AnnotatedExression = Expression<{ type: Type, substitution: Substitution }>
+export type TypeAnnotation = { type: Type, substitution: Substitution }
+export type AnnotatedExression = Expression<TypeAnnotation>
 
 let typeVariableCount = 0
 
@@ -240,14 +241,14 @@ export function inferTypes(expression: Expression, typeEnvironment: TypeEnvironm
 			const argument =
 				inferTypes(expression.argument, typeEnvironmentApplySubstitution(typeEnvironment, callee.substitution))
 
-			const { substitution: applicationSubstitution } = unify(
+			const { type: calleeType, substitution: applicationSubstitution } = unify(
 				typeApplySubstitution(callee.type, argument.substitution),
 				FunctionType(argument.type, returnType)
 			)
 
 			return {
 				...expression,
-				callee,
+				callee: { ...callee, type: calleeType },
 				argument,
 				type: typeApplySubstitution(returnType, applicationSubstitution),
 				substitution: composeSubstitutions(

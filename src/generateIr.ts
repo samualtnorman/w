@@ -1,15 +1,17 @@
-import { TypeSchemeType, inferTypes, typeToString } from "./inferTypes"
-import { ExpressionTag, parse, type Expression } from "./parse"
-import { tokenise } from "./tokenise"
+import { AnnotatedExression, TypeAnnotation, TypeTag, typeToString } from "./inferTypes"
+import { AbstractionExpression, ExpressionTag } from "./parse"
 
-export enum IrTag { I32Type = 1, I32Literal }
-export type I32Type = { tag: IrTag.I32Type }
-export type TypeIr = I32Type
-export type I32LiteralIr = { tag: IrTag.I32Literal, value: number }
-export type ExpressionIr = I32LiteralIr
+// new binaren.Module().call()
 
-export const I32Type: I32Type = { tag: IrTag.I32Type }
-export const I32LiteralIr = (value: number): I32LiteralIr => ({ tag: IrTag.I32Literal, value })
+export type I32TypeIr = { tag: "I32Type" }
+export type TypeIr = I32TypeIr
+export type I32LiteralIr = { tag: "I32Literal", value: number }
+export type GetLocalIr = { tag: "GetLocal", index: number }
+export type CallIr = { tag: "Call", name: string, arguments: ExpressionIr[] }
+export type ExpressionIr = I32LiteralIr | GetLocalIr | CallIr
+
+export const I32TypeIr: I32TypeIr = { tag: "I32Type" }
+export const I32LiteralIr = (value: number): I32LiteralIr => ({ tag: "I32Literal", value })
 
 type IrFunction = {
 	name: string
@@ -22,11 +24,14 @@ type IrFunction = {
 
 export type IrModule = IrFunction[]
 
-export function generateIr(expression: Expression): IrModule {
-	const irModule = []
-	const locals: I32Type[] = []
+export function generateIr(expression: AnnotatedExression): IrModule {
+	if (expression.type.tag != TypeTag.Bool && expression.type.tag != TypeTag.Int)
+		throw Error(`Module must return bool or int, got ${typeToString(expression.type)}`)
 
-	const body = generateExpressionIr(expression, {})
+	const irModule: IrFunction[] = []
+	const locals: TypeIr[] = []
+
+	const body = generateExpressionIr(expression, {}, {})
 
 	const functionIr: IrFunction = {
 		name: "main",
@@ -34,14 +39,18 @@ export function generateIr(expression: Expression): IrModule {
 		body,
 		export: true,
 		locals,
-		returnType: { tag: IrTag.I32Type }
+		returnType: { tag: "I32Type" }
 	}
 
 	irModule.push(functionIr)
 
 	return irModule
 
-	function generateExpressionIr(expression: Expression, environment: Record<string, { type: TypeSchemeType, localIndex: number }>): ExpressionIr {
+	function generateExpressionIr(
+		expression: AnnotatedExression,
+		variables: Record<string, number>,
+		functions: Record<string, AbstractionExpression<TypeAnnotation>>
+	): ExpressionIr {
 		switch (expression.tag) {
 			case ExpressionTag.False:
 				return I32LiteralIr(0)
@@ -53,27 +62,61 @@ export function generateIr(expression: Expression): IrModule {
 				return I32LiteralIr(expression.value)
 
 			case ExpressionTag.Let: {
-				const { type: variableType } = inferTypes(expression.value, Object.fromEntries(Object.entries(environment).map(([ name, { type } ]) => [ name, type ])))
+				if (expression.value.tag == ExpressionTag.Abstraction) {
+					return generateExpressionIr(
+						expression.body,
+						variables,
+						{ ...functions, [expression.name]: expression.value }
+					)
+				}
 
-				// console.log(typeToString(variableType))
+				const ir = generateExpressionIr(expression.body, { ...variables, [expression.name]: locals.length }, functions)
 
-				generateExpressionIr(expression.body, { ...environment, [expression.name]: { type: variableType, localIndex: 0 } })
+				locals.push(I32TypeIr)
 
-				// const subVariables = { ...variables, [expression.name]: locals.length }
-				// locals.push(I32Type)
+				return ir
+			}
 
-				return
+			case ExpressionTag.Identifier: {
+				const index = variables[expression.name]
+
+				if (index == undefined)
+					throw Error(`Missing variable ${expression.name}`)
+
+				return { tag: "GetLocal", index }
 			}
 
 			case ExpressionTag.Application: {
-				const { type } = inferTypes(expression.callee, Object.fromEntries(Object.entries(environment).map(([ name, { type } ]) => [ name, type ])))
+				if (expression.callee.type.tag != TypeTag.Function ||
+					expression.callee.type.argument.tag != TypeTag.Int ||
+					expression.callee.type.return.tag != TypeTag.Int ||
+					expression.callee.tag != ExpressionTag.Identifier
+				)
+					throw Error("Unsupported application")
 
-				console.log(typeToString(type))
+				const abstraction = functions[expression.callee.name]
 
-				return
+				if (!abstraction)
+					throw Error(`Missing function ${expression.callee.name}`)
+
+				irModule.push({
+					name: expression.callee.name,
+					argumentTypes: [ I32TypeIr ],
+					locals: [],
+					returnType: I32TypeIr,
+					body: generateExpressionIr(abstraction.body, variables, functions),
+					export: false
+				})
+
+				return {
+					tag: "Call",
+					name: expression.callee.name,
+					arguments: [ generateExpressionIr(expression.argument, variables, functions) ]
+				}
 			}
+
+			default:
+				throw Error(`Unhandled expression ${ExpressionTag[expression.tag]}`)
 		}
 	}
 }
-
-console.log(JSON.stringify(generateIr(parse([ ...tokenise(`let foo = x.x in foo 0`) ]))))
