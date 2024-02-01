@@ -2,16 +2,16 @@ import { isRecord } from "@samual/lib/isRecord"
 import { TokenTag, tokenIs, tokenToString, type Token } from "./tokenise"
 
 export enum ExpressionTag { Integer = 1, Identifier, Abstraction, Application, Let, True, False }
-export type IntegerExpression = { tag: ExpressionTag.Integer, value: number }
-export type IdentifierExpression = { tag: ExpressionTag.Identifier, name: string }
-export type AbstractionExpression = { tag: ExpressionTag.Abstraction, argumentName: string, body: Expression }
-export type ApplicationExpression = { tag: ExpressionTag.Application, callee: Expression, argument: Expression }
-export type LetExpression = { tag: ExpressionTag.Let, name: string, value: Expression, body: Expression }
-export type TrueExpression = { tag: ExpressionTag.True }
-export type FalseExpression = { tag: ExpressionTag.False }
+export type IntegerExpression<T = {}> = { tag: ExpressionTag.Integer, value: number } & T
+export type IdentifierExpression<T = {}> = { tag: ExpressionTag.Identifier, name: string } & T
+export type AbstractionExpression<T = {}> = { tag: ExpressionTag.Abstraction, argumentName: string, body: Expression<T> } & T
+export type ApplicationExpression<T = {}> = { tag: ExpressionTag.Application, callee: Expression<T>, argument: Expression<T> } & T
+export type LetExpression<T = {}> = { tag: ExpressionTag.Let, name: string, value: Expression<T>, body: Expression<T> } & T
+export type TrueExpression<T = {}> = { tag: ExpressionTag.True } & T
+export type FalseExpression<T = {}> = { tag: ExpressionTag.False } & T
 
-export type Expression = IntegerExpression | IdentifierExpression | AbstractionExpression | ApplicationExpression |
-	LetExpression | TrueExpression | FalseExpression
+export type Expression<T = {}> = IntegerExpression<T> | IdentifierExpression<T> | AbstractionExpression<T> |
+	ApplicationExpression<T> | LetExpression<T> | TrueExpression<T> | FalseExpression<T>
 
 export function parse(tokens: Token[], index: { $: number } = { $: 0 }): Expression {
 	let expression = maybeParse()
