@@ -1,5 +1,5 @@
-import { TokenTag, type Token, tokenToString, tokenIs, tokenise } from "./tokenise"
 import { isRecord } from "@samual/lib/isRecord"
+import { TokenTag, tokenIs, tokenToString, type Token } from "./tokenise"
 
 export enum ExpressionTag { Integer = 1, Identifier, Abstraction, Application, Let, True, False }
 export type IntegerExpression = { tag: ExpressionTag.Integer, value: bigint }
@@ -13,91 +13,81 @@ export type FalseExpression = { tag: ExpressionTag.False }
 export type Expression = IntegerExpression | IdentifierExpression | AbstractionExpression | ApplicationExpression |
 	LetExpression | TrueExpression | FalseExpression
 
-export function parse(tokens: Token[], index: { $: number }): Expression | undefined {
-	const firstToken = tokens[index.$]
-
-	switch (firstToken?.tag) {
-		case TokenTag.Identifier: {
-			index.$++
-
-			if (tokens[index.$]?.tag == TokenTag.Dot) {
-				index.$++
-				return { tag: ExpressionTag.Abstraction, parameterName: firstToken.data, body: parseApplication(tokens, index) }
-			}
-
-			return { tag: ExpressionTag.Identifier, name: firstToken.data }
-		}
-
-		case TokenTag.False: {
-			index.$++
-			return { tag: ExpressionTag.False }
-		}
-
-		case TokenTag.True: {
-			index.$++
-			return { tag: ExpressionTag.True }
-		}
-
-		case TokenTag.Integer: {
-			index.$++
-			return { tag: ExpressionTag.Integer, value: BigInt(firstToken.data) }
-		}
-
-		case TokenTag.OpenBracket: {
-			index.$++
-			const expression = parseApplication(tokens, index)
-			expectTag(TokenTag.CloseBracket)
-			return expression
-		}
-
-		case TokenTag.Let: {
-			index.$++
-			const identifier = expectTag(TokenTag.Identifier)
-			expectTag(TokenTag.Equals)
-			const value = parseApplication(tokens, index)
-			expectTag(TokenTag.In)
-			return { tag: ExpressionTag.Let, name: identifier.data, value, body: parseApplication(tokens, index) }
-		}
-	}
-
-	function expectTag<T extends TokenTag>(tag: T): Token & { tag: T } {
-		const token = tokens[index.$++]
-
-		if (!token)
-			throw Error("Unexpected end")
-
-		if (tokenIs(token, tag))
-			return token
-
-		throw Error(`Expected ${TokenTag[tag]}, got ${tokenToString(token)}`)
-	}
-}
-
-function expectExpression(tokens: Token[], index: { $: number }): Expression {
-	const expression = parse(tokens, index)
+export function parse(tokens: Token[], index: { $: number }): Expression {
+	let expression = maybeParse()
 
 	if (!expression) {
 		const token = tokens[index.$]
 
 		if (!token)
-			throw Error("Expected expression, reached end")
+			throw Error(`Expected expression, reached end`)
 
 		throw Error(`Expected expression, got ${tokenToString(token)}`)
 	}
 
-	return expression
-}
-
-function parseApplication(tokens: Token[], index: { $: number }): Expression {
-	let expression = expectExpression(tokens, index)
-	let argument = parse(tokens, index)
-
-	while (argument) {
+	for (let argument; argument = maybeParse();)
 		expression = { tag: ExpressionTag.Application, callee: expression, argument }
-		argument = parse(tokens, index)
-	}
 
 	return expression
+
+	function maybeParse(): Expression | undefined {
+		const firstToken = tokens[index.$]
+
+		switch (firstToken?.tag) {
+			case TokenTag.Identifier: {
+				index.$++
+
+				if (tokens[index.$]?.tag != TokenTag.Dot)
+					return { tag: ExpressionTag.Identifier, name: firstToken.data }
+
+				index.$++
+				return { tag: ExpressionTag.Abstraction, parameterName: firstToken.data, body: parse(tokens, index) }
+			}
+
+			case TokenTag.False: {
+				index.$++
+				return { tag: ExpressionTag.False }
+			}
+
+			case TokenTag.True: {
+				index.$++
+				return { tag: ExpressionTag.True }
+			}
+
+			case TokenTag.Integer: {
+				index.$++
+				return { tag: ExpressionTag.Integer, value: BigInt(firstToken.data) }
+			}
+
+			case TokenTag.OpenBracket: {
+				index.$++
+				const expression = parse(tokens, index)
+				expectTag(TokenTag.CloseBracket)
+				return expression
+			}
+
+			case TokenTag.Let: {
+				index.$++
+				const identifier = expectTag(TokenTag.Identifier)
+				expectTag(TokenTag.Equals)
+				const value = parse(tokens, index)
+				expectTag(TokenTag.In)
+				return { tag: ExpressionTag.Let, name: identifier.data, value, body: parse(tokens, index) }
+			}
+		}
+
+		function expectTag<T extends TokenTag>(tag: T): Token & { tag: T } {
+			const token = tokens[index.$++]
+
+			if (!token)
+				throw Error(`Expected ${TokenTag[tag]}, reached end`)
+
+			if (tokenIs(token, tag))
+				return token
+
+			throw Error(`Expected ${TokenTag[tag]}, got ${tokenToString(token)}`)
+		}
+	}
 }
 
 export function expressionToString(expression: Record<string, unknown>, indentLevel: number): string {
