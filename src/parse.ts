@@ -1,5 +1,6 @@
 import { isRecord } from "@samual/lib/isRecord"
 import { TokenTag, tokenIs, tokenToString, type Token } from "./tokenise"
+import { typeToString } from "./inferTypes"
 
 export enum ExpressionTag { Integer = 1, Identifier, Abstraction, Application, Let, True, False }
 export type IntegerExpression<T = {}> = { tag: ExpressionTag.Integer, value: number } & T
@@ -91,13 +92,16 @@ export function parse(tokens: Token[], index: { $: number } = { $: 0 }): Express
 }
 
 export function expressionToString(expression: Record<string, unknown>, indentLevel: number = 0): string {
-	const { tag, ...properties } = expression
+	const { tag, type, substitution, ...properties } = expression
 	let result = ``
 
 	if (typeof tag == `number`) {
 		result += `${ExpressionTag[tag]}\n`
 		indentLevel++
 	}
+
+	if (type)
+		result += `${"\t".repeat(indentLevel)}type: ${typeToString(type)}\n`
 
 	for (const [ name, value ] of Object.entries(properties)) {
 		result += `${result && "\t".repeat(indentLevel)}${name}:`
@@ -111,4 +115,30 @@ export function expressionToString(expression: Record<string, unknown>, indentLe
 	}
 
 	return result
+}
+
+export function expressionToSource(expression: Expression): string {
+	if (expression.tag == ExpressionTag.True)
+		return `true`
+
+	if (expression.tag == ExpressionTag.False)
+		return `false`
+
+	if (expression.tag == ExpressionTag.Integer)
+		return String(expression.value)
+
+	if (expression.tag == ExpressionTag.Identifier)
+		return expression.name
+
+	if (expression.tag == ExpressionTag.Abstraction)
+		return `${expression.argumentName}.${expressionToSource(expression.body)}`
+
+	if (expression.tag == ExpressionTag.Application) {
+		if (expression.callee.tag == ExpressionTag.Abstraction)
+			return `(${expressionToSource(expression.callee)}) ${expressionToSource(expression.argument)}`
+
+		return `${expressionToSource(expression.callee)} ${expressionToSource(expression.argument)}`
+	}
+
+	return `let ${expression.name} = ${expressionToSource(expression.value)} in\n${expressionToSource(expression.body)}`
 }

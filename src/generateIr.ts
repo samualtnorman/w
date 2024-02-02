@@ -1,19 +1,23 @@
-import { AnnotatedExression, TypeAnnotation, TypeTag, typeToString } from "./inferTypes"
-import { AbstractionExpression, ExpressionTag } from "./parse"
+import { inspect } from "util"
+import { AnnotatedExression, TypeAnnotation, TypeTag, inferTypes, typeToString } from "./inferTypes"
+import { AbstractionExpression, ExpressionTag, parse } from "./parse"
+import { tokenise } from "./tokenise"
+// import binaryen from "binaryen"
 
-// new binaren.Module().call()
+// binaryen.auto
+
+// new binaryen.Module().addFunction("foo", binaryen.none, binaryen.none, [], binar)
 
 export type I32TypeIr = { tag: "I32Type" }
-export type TypeIr = I32TypeIr
+export type I64TypeIr = { tag: "I64Type" }
+export type TypeIr = I32TypeIr | I64TypeIr
 export type I32LiteralIr = { tag: "I32Literal", value: number }
 export type GetLocalIr = { tag: "GetLocal", index: number }
-export type CallIr = { tag: "Call", name: string, arguments: ExpressionIr[] }
-export type ExpressionIr = I32LiteralIr | GetLocalIr | CallIr
+export type SetLocalIr = { tag: "SetLocal", index: number, value: ExpressionIr }
+export type CallIr = { tag: "CallIr", name: string, arguments: ExpressionIr }
+export type ExpressionIr = I32LiteralIr | GetLocalIr | CallIr | SetLocalIr | ExpressionIr[]
 
-export const I32TypeIr: I32TypeIr = { tag: "I32Type" }
-export const I32LiteralIr = (value: number): I32LiteralIr => ({ tag: "I32Literal", value })
-
-type IrFunction = {
+export type IrFunction = {
 	name: string
 	argumentTypes: TypeIr[] | undefined
 	returnType: TypeIr
@@ -24,6 +28,14 @@ type IrFunction = {
 
 export type IrModule = IrFunction[]
 
+export const I32TypeIr: I32TypeIr = { tag: "I32Type" }
+export const I32LiteralIr = (value: number): I32LiteralIr => ({ tag: "I32Literal", value })
+export const GetLocalIr = (index: number): GetLocalIr => ({ tag: "GetLocal", index })
+export const SetLocalIr = (index: number, value: ExpressionIr): SetLocalIr => ({ tag: "SetLocal", index, value })
+
+export const CallIr = (name: string, arguments_: ExpressionIr): CallIr =>
+	({ tag: "CallIr", name, arguments: arguments_ })
+
 export function generateIr(expression: AnnotatedExression): IrModule {
 	if (expression.type.tag != TypeTag.Bool && expression.type.tag != TypeTag.Int)
 		throw Error(`Module must return bool or int, got ${typeToString(expression.type)}`)
@@ -31,7 +43,7 @@ export function generateIr(expression: AnnotatedExression): IrModule {
 	const irModule: IrFunction[] = []
 	const locals: TypeIr[] = []
 
-	const body = generateExpressionIr(expression, {}, {})
+	const body = generateExpressionIr(expression, {})
 
 	const functionIr: IrFunction = {
 		name: "main",
@@ -39,7 +51,7 @@ export function generateIr(expression: AnnotatedExression): IrModule {
 		body,
 		export: true,
 		locals,
-		returnType: { tag: "I32Type" }
+		returnType: I32TypeIr
 	}
 
 	irModule.push(functionIr)
@@ -48,8 +60,10 @@ export function generateIr(expression: AnnotatedExression): IrModule {
 
 	function generateExpressionIr(
 		expression: AnnotatedExression,
-		variables: Record<string, number>,
-		functions: Record<string, AbstractionExpression<TypeAnnotation>>
+		environment: Record<
+			string,
+			{ tag: "Local", index: number } | { tag: "Function", ast: AbstractionExpression<TypeAnnotation> }
+		>
 	): ExpressionIr {
 		switch (expression.tag) {
 			case ExpressionTag.False:
@@ -65,12 +79,17 @@ export function generateIr(expression: AnnotatedExression): IrModule {
 				if (expression.value.tag == ExpressionTag.Abstraction) {
 					return generateExpressionIr(
 						expression.body,
-						variables,
-						{ ...functions, [expression.name]: expression.value }
+						{ ...environment, [expression.name]: { tag: "Function", ast: expression.value } }
 					)
 				}
 
-				const ir = generateExpressionIr(expression.body, { ...variables, [expression.name]: locals.length }, functions)
+				const ir: ExpressionIr = [
+					SetLocalIr(locals.length, generateExpressionIr(expression.value, environment)),
+					generateExpressionIr(
+						expression.body,
+						{ ...environment, [expression.name]: { tag: "Local", index: locals.length } }
+					)
+				]
 
 				locals.push(I32TypeIr)
 
@@ -78,41 +97,49 @@ export function generateIr(expression: AnnotatedExression): IrModule {
 			}
 
 			case ExpressionTag.Identifier: {
-				const index = variables[expression.name]
+				const variable = environment[expression.name]
 
-				if (index == undefined)
+				if (!variable)
 					throw Error(`Missing variable ${expression.name}`)
 
-				return { tag: "GetLocal", index }
+				if (variable.tag != "Local")
+					throw Error(`Expected ${expression.name} to be Local, got ${variable.tag}`)
+
+				return GetLocalIr(variable.index)
 			}
 
 			case ExpressionTag.Application: {
-				if (expression.callee.type.tag != TypeTag.Function ||
-					expression.callee.type.argument.tag != TypeTag.Int ||
-					expression.callee.type.return.tag != TypeTag.Int ||
-					expression.callee.tag != ExpressionTag.Identifier
-				)
+				if (expression.callee.tag == ExpressionTag.Application) {
+					return generateExpressionIr(expression.callee, environment)
+				}
+
+				if (expression.callee.tag != ExpressionTag.Identifier)
 					throw Error("Unsupported application")
 
-				const abstraction = functions[expression.callee.name]
+				const variable = environment[expression.callee.name]
 
-				if (!abstraction)
-					throw Error(`Missing function ${expression.callee.name}`)
+				if (!variable)
+					throw Error(`Missing variable ${expression.callee.name}`)
 
-				irModule.push({
-					name: expression.callee.name,
-					argumentTypes: [ I32TypeIr ],
-					locals: [],
-					returnType: I32TypeIr,
-					body: generateExpressionIr(abstraction.body, variables, functions),
-					export: false
-				})
+				if (variable.tag == "Function") {
+					if (expression.argument.type.tag == TypeTag.Function) {
+						generateExpressionIr(variable.ast.body, { ...environment, [variable.ast.argumentName]: { tag: "Function", ast: expression.argument } })
+					}
 
-				return {
-					tag: "Call",
-					name: expression.callee.name,
-					arguments: [ generateExpressionIr(expression.argument, variables, functions) ]
+					// generateExpressionIr(variable.ast.body, { ...environment, [variable.ast.argumentName]: {  } })
 				}
+
+				if (variable.tag != "Function")
+					throw Error(`Expected Function, got ${variable.tag}`)
+
+				const ir: ExpressionIr = [
+					SetLocalIr(locals.length, generateExpressionIr(expression.argument, environment)),
+					generateExpressionIr(variable.ast.body, { ...environment, [variable.ast.argumentName]: { tag: "Local", index: locals.length } })
+				]
+
+				locals.push(I32TypeIr)
+
+				return ir
 			}
 
 			default:
@@ -120,3 +147,7 @@ export function generateIr(expression: AnnotatedExression): IrModule {
 		}
 	}
 }
+
+const debugLog = (value: unknown) => console.debug(inspect(value, { depth: Infinity, colors: true }))
+
+console.log(inspect(generateIr(inferTypes(parse([ ...tokenise(`(a.a) (a.a)`) ]))), { depth: Infinity, colors: true }))
