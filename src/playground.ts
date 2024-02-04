@@ -7,8 +7,9 @@ import { AbstractionExpression, expressionToSource, parse } from "./parse"
 import { tokenise } from "./tokenise"
 
 const source = `
-	let foo = 4 in
-	a.foo
+	let id = a.a in
+	let foo = 42 in
+	arg.foo
 `
 
 const tokens = [ ...tokenise(source) ]
@@ -41,5 +42,5 @@ try {
 if (byteCode) {
 	const { instance: wasmInstance } = await WebAssembly.instantiate(byteCode)
 
-	console.log(wasmInstance.exports.main(0))
+	console.log(wasmInstance.exports.main(42))
 }
