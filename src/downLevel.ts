@@ -14,12 +14,14 @@ export function downLevel(
 		if (value.type.tag == TypeTag.Function)
 			return downLevel(expression.body, { ...environment, [expression.name]: value })
 
-		if (expression.body.tag != ExpressionTag.Abstraction)
-			return { ...expression, value, body: downLevel(expression.body, environment) }
+		const body = downLevel(expression.body)
+
+		if (body.tag != ExpressionTag.Abstraction)
+			return { ...expression, value, body: downLevel(body, environment) }
 
 		return {
-			...expression.body,
-			body: { ...expression, value, body: downLevel(expression.body.body, environment) }
+			...body,
+			body: { ...expression, value, body: downLevel(body.body, environment) }
 		}
 	}
 
