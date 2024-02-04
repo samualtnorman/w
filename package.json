@@ -1,11 +1,16 @@
 {
 	"devDependencies": {
+		"@babel/preset-typescript": "^7.23.3",
+		"@rollup/plugin-babel": "^6.0.4",
+		"@rollup/plugin-node-resolve": "^15.2.3",
 		"@total-typescript/ts-reset": "^0.5.1",
 		"@types/node": "^20.11.16",
+		"rollup": "^4.9.6",
 		"typescript": "^5.3.3"
 	},
 	"dependencies": {
 		"@samual/lib": "^0.9.1",
 		"binaryen": "^116.0.0"
-	}
+	},
+	"type": "module"
 }
