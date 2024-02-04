@@ -14,79 +14,90 @@ export type FalseExpression<T = {}> = { tag: ExpressionTag.False } & T
 export type Expression<T = {}> = IntegerExpression<T> | IdentifierExpression<T> | AbstractionExpression<T> |
 	ApplicationExpression<T> | LetExpression<T> | TrueExpression<T> | FalseExpression<T>
 
-export function parse(tokens: Token[], index: { $: number } = { $: 0 }): Expression {
-	let expression = maybeParse()
+export function parse(tokens: Token[]): Expression {
+	const index = { $: 0 }
 
-	if (!expression) {
-		const token = tokens[index.$]
+	const expression = greedyParse(tokens, index)
 
-		if (!token)
-			throw Error(`Expected expression, reached end`)
-
-		throw Error(`Expected expression, got ${tokenToString(token)}`)
-	}
-
-	for (let argument; argument = maybeParse();)
-		expression = { tag: ExpressionTag.Application, callee: expression, argument }
+	if (index.$ < tokens.length)
+		throw Error(`Unexpected token ${tokenToString(tokens[index.$]!)}`)
 
 	return expression
 
-	function maybeParse(): Expression | undefined {
-		const firstToken = tokens[index.$]
+	function greedyParse(tokens: Token[], index: { $: number }): Expression {
+		let expression = maybeParse()
 
-		switch (firstToken?.tag) {
-			case TokenTag.Identifier: {
-				index.$++
-
-				if (tokens[index.$]?.tag != TokenTag.Dot)
-					return { tag: ExpressionTag.Identifier, name: firstToken.data }
-
-				index.$++
-				return { tag: ExpressionTag.Abstraction, argumentName: firstToken.data, body: parse(tokens, index) }
-			}
-
-			case TokenTag.False: {
-				index.$++
-				return { tag: ExpressionTag.False }
-			}
-
-			case TokenTag.True: {
-				index.$++
-				return { tag: ExpressionTag.True }
-			}
-
-			case TokenTag.Integer: {
-				index.$++
-				return { tag: ExpressionTag.Integer, value: parseInt(firstToken.data, 10) }
-			}
-
-			case TokenTag.OpenBracket: {
-				index.$++
-				const expression = parse(tokens, index)
-				expectTag(TokenTag.CloseBracket)
-				return expression
-			}
-
-			case TokenTag.Let: {
-				index.$++
-				const identifier = expectTag(TokenTag.Identifier)
-				expectTag(TokenTag.Equals)
-				const value = parse(tokens, index)
-				expectTag(TokenTag.In)
-				return { tag: ExpressionTag.Let, name: identifier.data, value, body: parse(tokens, index) }
-			}
-		}
-
-		function expectTag<T extends TokenTag>(tag: T): Token & { tag: T } {
-			const token = tokens[index.$++]
+		if (!expression) {
+			const token = tokens[index.$]
 
 			if (!token)
-				throw Error(`Expected ${TokenTag[tag]}, reached end`)
+				throw Error(`Expected expression, reached end`)
 
-			if (tokenIs(token, tag))
-				return token
+			throw Error(`Expected expression, got ${tokenToString(token)}`)
+		}
 
-			throw Error(`Expected ${TokenTag[tag]}, got ${tokenToString(token)}`)
+		for (let argument; argument = maybeParse();)
+			expression = { tag: ExpressionTag.Application, callee: expression, argument }
+
+		return expression
+
+		function maybeParse(): Expression | undefined {
+			const firstToken = tokens[index.$]
+
+			switch (firstToken?.tag) {
+				case TokenTag.Identifier: {
+					index.$++
+
+					if (tokens[index.$]?.tag != TokenTag.Dot)
+						return { tag: ExpressionTag.Identifier, name: firstToken.data }
+
+					index.$++
+					return { tag: ExpressionTag.Abstraction, argumentName: firstToken.data, body: greedyParse(tokens, index) }
+				}
+
+				case TokenTag.False: {
+					index.$++
+					return { tag: ExpressionTag.False }
+				}
+
+				case TokenTag.True: {
+					index.$++
+					return { tag: ExpressionTag.True }
+				}
+
+				case TokenTag.Integer: {
+					index.$++
+					return { tag: ExpressionTag.Integer, value: parseInt(firstToken.data, 10) }
+				}
+
+				case TokenTag.OpenBracket: {
+					index.$++
+					const expression = greedyParse(tokens, index)
+					expectTag(TokenTag.CloseBracket)
+					return expression
+				}
+
+				case TokenTag.Let: {
+					index.$++
+					const identifier = expectTag(TokenTag.Identifier)
+					expectTag(TokenTag.Equals)
+					const value = greedyParse(tokens, index)
+					expectTag(TokenTag.In)
+					return { tag: ExpressionTag.Let, name: identifier.data, value, body: greedyParse(tokens, index) }
+				}
+			}
+
+			function expectTag<T extends TokenTag>(tag: T): Token & { tag: T } {
+				const token = tokens[index.$++]
+
+				if (!token)
+					throw Error(`Expected ${TokenTag[tag]}, reached end`)
+
+				if (tokenIs(token, tag))
+					return token
+
+				throw Error(`Expected ${TokenTag[tag]}, got ${tokenToString(token)}`)
+			}
 		}
 	}
 }
@@ -134,7 +145,7 @@ export function expressionToSource(expression: Expression): string {
 		return `${expression.argumentName}.${expressionToSource(expression.body)}`
 
 	if (expression.tag == ExpressionTag.Application) {
-		if (expression.callee.tag == ExpressionTag.Abstraction)
+		if (expression.callee.tag == ExpressionTag.Abstraction || expression.callee.tag == ExpressionTag.Application)
 			return `(${expressionToSource(expression.callee)}) ${expressionToSource(expression.argument)}`
 
 		return `${expressionToSource(expression.callee)} ${expressionToSource(expression.argument)}`
