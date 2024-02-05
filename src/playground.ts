@@ -3,18 +3,13 @@ import { downLevel } from "./downLevel"
 import { generateBinaryenModule } from "./generateBinaryenModule"
 import { generateIr } from "./generateIr"
 import { BoolType, FunctionType, IntType, TypeAnnotation, TypeSchemeType, TypeVariableType, inferTypes, typeToString } from "./inferTypes"
-import { AbstractionExpression, expressionToSource, parse } from "./parse"
+import { AbstractionExpression, expressionToSource, expressionToString, parse } from "./parse"
 import { tokenise } from "./tokenise"
 
 try {
 	const source = `
-		let rec fib = n ->
-			if n < 2 then
-				n
-			else
-				fib (n - 1) + fib (n - 2)
-			in
-		fib
+		let b = c -> c 0 in
+		b (e -> e)
 	`
 
 	const tokens = [ ...tokenise(source) ]
@@ -38,6 +33,11 @@ try {
 		lt_s: TypeSchemeType([], FunctionType(IntType, FunctionType(IntType, BoolType)))
 	})
 
+	console.log(expressionToString(typedAst))
+	console.log()
+
+	console.log(typedAst.substitution)
+
 	console.log(typeToString(typedAst.type))
 	console.log()
 
@@ -59,7 +59,7 @@ try {
 	const byteCode = binaryenModule.emitBinary()
 	const { instance: wasmInstance } = await WebAssembly.instantiate(byteCode)
 
-	console.log(wasmInstance.exports.main(42))
+	console.log((wasmInstance.exports!.main as Function)(42))
 } catch (error) {
-	console.error("Caught", error.stack)
+	console.error("Caught", (error as Record<string, unknown>).stack)
 }
