@@ -9,6 +9,7 @@
 		"typescript": "^5.3.3"
 	},
 	"dependencies": {
+		"@paralleldrive/cuid2": "^2.2.2",
 		"@samual/lib": "^0.9.1",
 		"binaryen": "^116.0.0"
 	},
