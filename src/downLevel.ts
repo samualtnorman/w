@@ -41,8 +41,12 @@ export function downLevel(
 	if (expression.tag == ExpressionTag.Application) {
 		const callee = downLevel(expression.callee, environment)
 
-		if (callee.tag == ExpressionTag.Abstraction)
-			return downLevel(callee.body, { ...environment, [callee.argumentName]: downLevel(expression.argument, environment) })
+		if (callee.tag == ExpressionTag.Abstraction) {
+			return downLevel(
+				callee.body,
+				{ ...environment, [callee.argumentName]: downLevel(expression.argument, environment) }
+			)
+		}
 
 		return {
 			...expression,

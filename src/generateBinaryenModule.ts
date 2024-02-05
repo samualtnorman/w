@@ -35,6 +35,13 @@ export function generateBinaryenModule(irModule: IrModule): binaryen.Module {
 
 			case `SetLocal`:
 				return module.local.set(expressionIr.index, generateBinaryenExpression(expressionIr.value))
+
+			case `I32Add`: {
+				return module.i32.add(
+					generateBinaryenExpression(expressionIr.left),
+					generateBinaryenExpression(expressionIr.right)
+				)
+			}
 		}
 	}
 }
