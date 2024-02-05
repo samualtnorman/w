@@ -145,7 +145,9 @@ export function expressionToSource(expression: Expression): string {
 		return `${expression.argumentName}.${expressionToSource(expression.body)}`
 
 	if (expression.tag == ExpressionTag.Application) {
-		if (expression.callee.tag == ExpressionTag.Abstraction || expression.callee.tag == ExpressionTag.Application)
+		if (expression.callee.tag == ExpressionTag.Abstraction || expression.callee.tag == ExpressionTag.Application ||
+			expression.callee.tag == ExpressionTag.Let
+		)
 			return `(${expressionToSource(expression.callee)}) ${expressionToSource(expression.argument)}`
 
 		return `${expressionToSource(expression.callee)} ${expressionToSource(expression.argument)}`
