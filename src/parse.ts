@@ -1,6 +1,6 @@
 import { isRecord } from "@samual/lib/isRecord"
 import { TokenTag, tokenIs, tokenToString, type Token } from "./tokenise"
-import { typeToString } from "./inferTypes"
+import { Type, typeToString } from "./inferTypes"
 
 export enum ExpressionTag {
 	Integer = 1, Identifier, Abstraction, Application, Let, True, False, RecursiveLet, LessThan, Minus, Add, IfElse
@@ -201,7 +201,7 @@ export function expressionToString(expression: Record<string, unknown>, indentLe
 	}
 
 	if (type)
-		result += `${"\t".repeat(indentLevel)}type: ${typeToString(type)}\n`
+		result += `${"\t".repeat(indentLevel)}type: ${typeToString(type as Type)}\n`
 
 	for (const [ name, value ] of Object.entries(properties)) {
 		result += `${result && "\t".repeat(indentLevel)}${name}:`
@@ -248,11 +248,11 @@ export function expressionToSource(expression: Expression, indentLevel = 0): str
 	}
 
 	if (expression.tag == ExpressionTag.Let) {
-		const indent = `\t`.repeat(indentLevel + 1)
+		const indent = `\t`.repeat(indentLevel)
 		const value = expressionToSource(expression.value, indentLevel + 1)
 		const body = expressionToSource(expression.body, indentLevel)
 
-		return `let ${expression.name} =\n${indent}${value}\n${indent}in\n${body}`
+		return `let ${expression.name} =\n\t${indent}${value}\n\t${indent}in\n${indent}${body}`
 	}
 
 	if (expression.tag == ExpressionTag.RecursiveLet) {
