@@ -10,6 +10,14 @@ export function downLevel(
 		return environment[expression.name] || expression
 
 	if (expression.tag == ExpressionTag.Let) {
+		if (expression.value.tag == ExpressionTag.Let) {
+			const cuid2 = Cuid2.createId()
+
+			renameVariable(expression.value.body, expression.value.name, cuid2)
+
+			return downLevel({ ...expression.value, name: cuid2, body: { ...expression, value: expression.value.body } }, environment)
+		}
+
 		const value = downLevel(expression.value, environment)
 
 		if (value.type.tag == TypeTag.Function)
