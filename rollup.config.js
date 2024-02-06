@@ -3,6 +3,7 @@ import babelPresetTypescript from "@babel/preset-typescript"
 import { babel } from "@rollup/plugin-babel"
 import { nodeResolve } from "@rollup/plugin-node-resolve"
 import { findFiles } from "@samual/lib/findFiles"
+import babelPluginHere from "babel-plugin-here"
 import packageJson from "./package.json" assert { type: "json" }
 
 /** @typedef {import("rollup").RollupOptions} RollupOptions */
@@ -22,7 +23,7 @@ const SOURCE_FOLDER = "src"
 	},
 	plugins: [
 		nodeResolve({ extensions: [ ".ts" ] }),
-		babel({ babelHelpers: "bundled", extensions: [ ".ts" ], presets: [ babelPresetTypescript ] })
+		babel({ babelHelpers: "bundled", extensions: [ ".ts" ], presets: [ babelPresetTypescript ], plugins: [ babelPluginHere ] })
 	],
 	strictDeprecations: true,
 	treeshake: { moduleSideEffects: false }

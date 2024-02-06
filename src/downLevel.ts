@@ -58,6 +58,9 @@ export function downLevel(
 	if (expression.tag == ExpressionTag.Abstraction)
 		return { ...expression, body: downLevel(expression.body, environment) }
 
+	if (expression.tag == ExpressionTag.Add)
+		return { ...expression, left: downLevel(expression.left, environment), right: downLevel(expression.right, environment) }
+
 	return expression
 }
 

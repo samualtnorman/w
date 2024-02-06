@@ -35,6 +35,9 @@ export const typeSchemeTypeApplySubsitution =
 		)
 	)
 
+export const substitutionToString = (substitution: Substitution) =>
+	`{${Object.entries(substitution).map(([ name, type ]) => `${name}: ${typeToString(type)}`).join(", ")}}`
+
 export function typeApplySubstitution(type: Type, substitution: Substitution): Type {
 	switch (type.tag) {
 		case TypeTag.Bool:
@@ -294,16 +297,18 @@ export function inferTypes(expression: Expression, typeEnvironment: TypeEnvironm
 		case ExpressionTag.Add:
 		case ExpressionTag.Minus: {
 			const left = inferTypes(expression.left, typeEnvironment)
-			const { substitution: leftSubstitution } = unify(left.type, IntType)
-			const right = inferTypes(expression.right, typeEnvironment)
-			const { substitution: rightSubstitution } = unify(right.type, IntType)
+			const leftUnified = unify(left.type, IntType)
+			let substitution = composeSubstitutions(leftUnified.substitution, left.substitution)
+			const right = inferTypes(expression.right, typeEnvironmentApplySubstitution(typeEnvironment, substitution))
+			substitution = composeSubstitutions(right.substitution, substitution)
+			const rightUnified = unify(right.type, IntType)
 
 			return {
 				...expression,
 				left,
 				right,
 				type: IntType,
-				substitution: composeSubstitutions(leftSubstitution, rightSubstitution)
+				substitution: composeSubstitutions(rightUnified.substitution, substitution)
 			}
 		}
 

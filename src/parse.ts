@@ -231,10 +231,11 @@ export function expressionToSource(expression: Expression, indentLevel = 0): str
 		return expression.name
 
 	if (expression.tag == ExpressionTag.Abstraction) {
-		const indent = `\t`.repeat(indentLevel + 1)
-		const body = expressionToSource(expression.body, indentLevel + 1)
+		let body = expressionToSource(expression.body, indentLevel + 1)
 
-		return `${expression.argumentName} ->\n${indent}${body}`
+		body = body.includes("\n") ? `\n${`\t`.repeat(indentLevel + 1)}${body}` : ` ${body}`
+
+		return `${expression.argumentName} ->${body}`
 	}
 
 	if (expression.tag == ExpressionTag.Application) {
@@ -249,18 +250,23 @@ export function expressionToSource(expression: Expression, indentLevel = 0): str
 
 	if (expression.tag == ExpressionTag.Let) {
 		const indent = `\t`.repeat(indentLevel)
-		const value = expressionToSource(expression.value, indentLevel + 1)
-		const body = expressionToSource(expression.body, indentLevel)
+		let value = expressionToSource(expression.value, indentLevel + 1)
 
-		return `let ${expression.name} =\n\t${indent}${value}\n\t${indent}in\n${indent}${body}`
+		value = value.includes("\n") ? `\n\t${indent}${value}` : ` ${value}`
+
+		let body = expressionToSource(expression.body, indentLevel)
+
+		body = value.includes("\n") ? `\n\t${indent}in\n${indent}${body}` : ` in\n${indent}${body}`
+
+		return `let ${expression.name} =${value}${body}`
 	}
 
 	if (expression.tag == ExpressionTag.RecursiveLet) {
-		const indent = `\t`.repeat(indentLevel + 1)
+		const indent = `\t`.repeat(indentLevel)
 		const value = expressionToSource(expression.value, indentLevel + 1)
 		const body = expressionToSource(expression.body, indentLevel)
 
-		return `let rec ${expression.name} =\n${indent}${value}\n${indent}in\n${body}`
+		return `let rec ${expression.name} =\n\t${indent}${value}\n\t${indent}in\n${indent}${body}`
 	}
 
 	if (expression.tag == ExpressionTag.IfElse) {

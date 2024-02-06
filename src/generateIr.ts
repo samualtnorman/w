@@ -1,5 +1,5 @@
 import { AnnotatedExression, FunctionType, IntType, TypeAnnotation, unify } from "./inferTypes"
-import { AbstractionExpression, ExpressionTag, expressionToSource } from "./parse"
+import { AbstractionExpression, ExpressionTag } from "./parse"
 
 export type I32TypeIr = { tag: "I32Type" }
 export type I64TypeIr = { tag: "I64Type" }
@@ -72,20 +72,13 @@ export function generateIr(downLeveledExpression: AbstractionExpression<TypeAnno
 			case ExpressionTag.Identifier:
 				return [ GetLocalIr(nameToIndexes[expression.name]!) ]
 
-			case ExpressionTag.Application: {
-				if (expression.callee.tag == ExpressionTag.Application &&
-					expression.callee.callee.tag == ExpressionTag.Identifier &&
-					expression.callee.callee.name == `add`
-				) {
-					return [
-						I32AddIr(
-							BlockIr(generateExpressionIr(expression.callee.argument, nameToIndexes)),
-							BlockIr(generateExpressionIr(expression.argument, nameToIndexes)
-						))
-					]
-				}
-
-				throw Error(`Unsupported callee: ${expressionToSource(expression.callee)}`)
+			case ExpressionTag.Add: {
+				return [
+					I32AddIr(
+						BlockIr(generateExpressionIr(expression.left, nameToIndexes)),
+						BlockIr(generateExpressionIr(expression.right, nameToIndexes))
+					)
+				]
 			}
 
 			default:

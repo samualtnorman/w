@@ -5,6 +5,7 @@
 		"@rollup/plugin-node-resolve": "^15.2.3",
 		"@total-typescript/ts-reset": "^0.5.1",
 		"@types/node": "^20.11.16",
+		"babel-plugin-here": "^0.0.1",
 		"rollup": "^4.9.6",
 		"typescript": "^5.3.3"
 	},

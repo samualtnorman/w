@@ -31,6 +31,9 @@ devDependencies:
   '@types/node':
     specifier: ^20.11.16
     version: 20.11.16
+  babel-plugin-here:
+    specifier: ^0.0.1
+    version: 0.0.1
   rollup:
     specifier: ^4.9.6
     version: 4.9.6
@@ -590,6 +593,13 @@ packages:
       color-convert: 1.9.3
     dev: true
 
+  /babel-plugin-here@0.0.1:
+    resolution: {integrity: sha512-7pDq338T+Jr0Ogc+lPOFYYax0dBWMna9cvRLQNPm0mATGYwNcAfXyCnRZlAlsBgFgzSvkCJHGFT8PUn6hBmwYg==}
+    engines: {node: '>=16'}
+    dependencies:
+      '@babel/types': 7.23.9
+    dev: true
+
   /binaryen@116.0.0:
     resolution: {integrity: sha512-Hp0dXC6Cb/rTwWEoUS2BRghObE7g/S9umKtxuTDt3f61G6fNTE/YVew/ezyy3IdHcLx3f17qfh6LwETgCfvWkQ==}
     hasBin: true
@@ -601,7 +611,7 @@ packages:
     hasBin: true
     dependencies:
       caniuse-lite: 1.0.30001584
-      electron-to-chromium: 1.4.656
+      electron-to-chromium: 1.4.657
       node-releases: 2.0.14
       update-browserslist-db: 1.0.13(browserslist@4.22.3)
     dev: true
@@ -655,12 +665,12 @@ packages:
     engines: {node: '>=0.10.0'}
     dev: true
 
-  /electron-to-chromium@1.4.656:
-    resolution: {integrity: sha512-9AQB5eFTHyR3Gvt2t/NwR0le2jBSUNwCnMbUCejFWHD+so4tH40/dRLgoE+jxlPeWS43XJewyvCv+I8LPMl49Q==}
+  /electron-to-chromium@1.4.657:
+    resolution: {integrity: sha512-On2ymeleg6QbRuDk7wNgDdXtNqlJLM2w4Agx1D/RiTmItiL+a9oq5p7HUa2ZtkAtGBe/kil2dq/7rPfkbe0r5w==}
     dev: true
 
-  /escalade@3.1.1:
-    resolution: {integrity: sha512-k0er2gUkLf8O0zKJiAhmkTnJlTvINGv7ygDNPbeIsX/TJjGJZHuh9B2UxbsaEkmlEo9MfhrSzmhIlhRlI2GXnw==}
+  /escalade@3.1.2:
+    resolution: {integrity: sha512-ErCHMCae19vR8vQGe50xIsVomy19rg6gFu3+r3jkEO46suLMWBksvVyoGgQV+jOfl84ZSOSlmv6Gxa89PmTGmA==}
     engines: {node: '>=6'}
     dev: true
 
@@ -838,7 +848,7 @@ packages:
       browserslist: '>= 4.21.0'
     dependencies:
       browserslist: 4.22.3
-      escalade: 3.1.1
+      escalade: 3.1.2
       picocolors: 1.0.0
     dev: true
 
