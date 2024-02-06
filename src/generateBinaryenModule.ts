@@ -1,5 +1,5 @@
 import binaryen from "binaryen"
-import type { ExpressionIr, IrModule, TypeIr } from "./generateIr"
+import type { ExpressionIr, IrFunction, IrModule, TypeIr } from "./generateIr"
 
 export function generateBinaryenModule(irModule: IrModule): binaryen.Module {
 	const module = new binaryen.Module()
@@ -7,12 +7,12 @@ export function generateBinaryenModule(irModule: IrModule): binaryen.Module {
 	for (const irFunction of irModule) {
 		module.addFunction(
 			irFunction.name,
-			irFunction.argumentTypes
-				? binaryen.createType(irFunction.argumentTypes.map(generateBinaryenType))
+			irFunction.arguments
+				? binaryen.createType(irFunction.arguments.map(generateBinaryenType))
 				: binaryen.none,
 			generateBinaryenType(irFunction.returnType),
 			irFunction.locals.map(generateBinaryenType),
-			generateBinaryenExpression(irFunction.body)
+			generateBinaryenExpression(irFunction.body, irFunction)
 		)
 
 		if (irFunction.export)
@@ -21,25 +21,32 @@ export function generateBinaryenModule(irModule: IrModule): binaryen.Module {
 
 	return module
 
-	function generateBinaryenExpression(expressionIr: ExpressionIr): number {
+	function generateBinaryenExpression(expressionIr: ExpressionIr, irFunction: IrFunction): number {
 		switch (expressionIr.tag) {
-			case `Block`:
-				return module.block(expressionIr.name ?? null, expressionIr.children.map(generateBinaryenExpression))
+			case `Block`: {
+				return module.block(
+					expressionIr.name ?? null,
+					expressionIr.children.map(item => generateBinaryenExpression(item, irFunction))
+				)
+			}
 
-			case `GetLocal`:
-				// FIXME either figure out the type or store it in the ir
-				return module.local.get(expressionIr.index, binaryen.i32)
+			case `GetLocal`: {
+				return module.local.get(
+					expressionIr.index,
+					generateBinaryenType([ ...irFunction.arguments, ...irFunction.locals ][expressionIr.index]!)
+				)
+			}
 
 			case `I32Literal`:
 				return module.i32.const(expressionIr.value)
 
 			case `SetLocal`:
-				return module.local.set(expressionIr.index, generateBinaryenExpression(expressionIr.value))
+				return module.local.set(expressionIr.index, generateBinaryenExpression(expressionIr.value, irFunction))
 
 			case `I32Add`: {
 				return module.i32.add(
-					generateBinaryenExpression(expressionIr.left),
-					generateBinaryenExpression(expressionIr.right)
+					generateBinaryenExpression(expressionIr.left, irFunction),
+					generateBinaryenExpression(expressionIr.right, irFunction)
 				)
 			}
 		}

@@ -13,7 +13,7 @@ export type ExpressionIr = I32LiteralIr | GetLocalIr | SetLocalIr | BlockIr | I3
 
 export type IrFunction = {
 	name: string
-	argumentTypes: TypeIr[] | undefined
+	arguments: TypeIr[]
 	returnType: TypeIr
 	locals: TypeIr[]
 	body: ExpressionIr
@@ -38,7 +38,7 @@ export function generateIr(downLeveledExpression: AbstractionExpression<TypeAnno
 	return [
 		{
 			name: "main",
-			argumentTypes: [ I32TypeIr ],
+			arguments: [ I32TypeIr ],
 			body: BlockIr(body),
 			export: true,
 			locals,
