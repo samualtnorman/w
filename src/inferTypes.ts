@@ -6,7 +6,7 @@ export type IntType = { tag: TypeTag.Int }
 export type TypeVariableType = { tag: TypeTag.TypeVariable, name: string }
 export type FunctionType = { tag: TypeTag.Function, argument: Type, return: Type }
 export type TypeSchemeType = { tag: TypeTag.TypeScheme, bound: string[], type: Type }
-export type Type = BoolType | IntType | TypeVariableType | FunctionType | TypeSchemeType
+export type Type = BoolType | IntType | TypeVariableType | FunctionType
 export type TypeEnvironment = Record<string, TypeSchemeType>
 export type Substitution = Record<string, Type>
 export type TypeAnnotation = { type: Type, substitution: Substitution }
@@ -54,9 +54,6 @@ export function typeApplySubstitution(type: Type, substitution: Substitution): T
 				return: typeApplySubstitution(type.return, substitution)
 			}
 		}
-
-		case TypeTag.TypeScheme:
-			return typeSchemeTypeApplySubsitution(type, substitution)
 	}
 }
 
@@ -66,7 +63,7 @@ export const typeEnvironmentApplySubstitution =
 			.map(([ name, typeSchemeType ]) => [ name, typeSchemeTypeApplySubsitution(typeSchemeType, substitution) ])
 	)
 
-export function contains(haystack: Type, needle: Type): boolean {
+export function contains(haystack: Type | TypeSchemeType, needle: Type): boolean {
 	switch (haystack.tag) {
 		case TypeTag.Bool:
 		case TypeTag.Int:
@@ -83,7 +80,7 @@ export function contains(haystack: Type, needle: Type): boolean {
 	}
 }
 
-export function typeToString(type: Type): string {
+export function typeToString(type: Type | TypeSchemeType): string {
 	switch (type.tag) {
 		case TypeTag.Bool:
 			return "bool"
@@ -164,13 +161,10 @@ export function unify(a: Type, b: Type): { type: Type, substitution: Substitutio
 
 			return { type: typeApplySubstitution(a, substitution), substitution }
 		}
-
-		case TypeTag.TypeScheme:
-			throw Error("not implemented")
 	}
 }
 
-export function findTypeFreeTypeVariables(type: Type, freeTypeVariables: Set<string>): void {
+export function findTypeFreeTypeVariables(type: Type | TypeSchemeType, freeTypeVariables: Set<string>): void {
 	switch (type.tag) {
 		case TypeTag.Bool:
 		case TypeTag.Int:
@@ -346,7 +340,12 @@ export function inferTypes(expression: Expression, typeEnvironment: TypeEnvironm
 
 		case ExpressionTag.RecursiveLet: {
 			const typeVariableType = TypeVariableType()
-			const value = inferTypes(expression.value, { ...typeEnvironment, [expression.name]: TypeSchemeType([ typeVariableType.name ], typeVariableType) })
+
+			const value = inferTypes(
+				expression.value,
+				{ ...typeEnvironment, [expression.name]: TypeSchemeType([ typeVariableType.name ], typeVariableType) }
+			)
+
 			const typeFreeTypeVariables = new Set<string>
 
 			findTypeFreeTypeVariables(value.type, typeFreeTypeVariables)
