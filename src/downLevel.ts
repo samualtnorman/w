@@ -1,5 +1,6 @@
 import Cuid2 from "@paralleldrive/cuid2"
-import { TypeTag, type AnnotatedExression } from "./inferTypes"
+import { TypeTag } from "./Type"
+import type { AnnotatedExression } from "./inferTypes"
 import { ExpressionTag, type Expression } from "./parse"
 
 export function downLevel(

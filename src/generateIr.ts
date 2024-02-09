@@ -1,5 +1,7 @@
-import { AnnotatedExression, FunctionType, IntType, TypeAnnotation, unify } from "./inferTypes"
-import { AbstractionExpression, ExpressionTag } from "./parse"
+import { FunctionType, IntType } from "./Type"
+import { type AnnotatedExression, type TypeAnnotation } from "./inferTypes"
+import { unify } from "./inferTypes/unify"
+import { ExpressionTag, type AbstractionExpression } from "./parse"
 
 export type I32TypeIr = { tag: "I32Type" }
 export type I64TypeIr = { tag: "I64Type" }

@@ -2,9 +2,12 @@ import { inspect } from "util"
 import { downLevel } from "./downLevel"
 import { generateBinaryenModule } from "./generateBinaryenModule"
 import { generateIr } from "./generateIr"
-import { inferTypes, typeToString, type TypeAnnotation, TypeSchemeType, FunctionType, IntType, substitutionToString } from "./inferTypes"
+import { inferTypes, type TypeAnnotation } from "./inferTypes"
 import { expressionToSource, expressionToString, parse, type AbstractionExpression } from "./parse"
+import { substitutionToString } from "./substitutionToString"
 import { tokenise } from "./tokenise"
+import { FunctionType, IntType, TypeSchemeType } from "./Type"
+import { typeToString } from "./typeToString"
 
 try {
 	const source = `

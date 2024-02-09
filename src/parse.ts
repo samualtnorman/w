@@ -1,6 +1,7 @@
 import { isRecord } from "@samual/lib/isRecord"
 import { TokenTag, tokenIs, tokenToString, type Token } from "./tokenise"
-import { Type, typeToString } from "./inferTypes"
+import { typeToString } from "./typeToString"
+import type { Type } from "./Type"
 
 export enum ExpressionTag {
 	Integer = 1, Identifier, Abstraction, Application, Let, True, False, RecursiveLet, LessThan, Minus, Add, IfElse
