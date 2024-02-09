@@ -1,4 +1,4 @@
-import * as Cuid2 from "@paralleldrive/cuid2"
+import Cuid2 from "@paralleldrive/cuid2"
 import { TypeTag, type AnnotatedExression } from "./inferTypes"
 import { ExpressionTag, type Expression } from "./parse"
 
@@ -15,7 +15,10 @@ export function downLevel(
 
 			renameVariable(expression.value.body, expression.value.name, cuid2)
 
-			return downLevel({ ...expression.value, name: cuid2, body: { ...expression, value: expression.value.body } }, environment)
+			return downLevel(
+				{ ...expression.value, name: cuid2, body: { ...expression, value: expression.value.body } },
+				environment
+			)
 		}
 
 		const value = downLevel(expression.value, environment)
@@ -58,8 +61,13 @@ export function downLevel(
 	if (expression.tag == ExpressionTag.Abstraction)
 		return { ...expression, body: downLevel(expression.body, environment) }
 
-	if (expression.tag == ExpressionTag.Add)
-		return { ...expression, left: downLevel(expression.left, environment), right: downLevel(expression.right, environment) }
+	if (expression.tag == ExpressionTag.Add) {
+		return {
+			...expression,
+			left: downLevel(expression.left, environment),
+			right: downLevel(expression.right, environment)
+		}
+	}
 
 	return expression
 }
