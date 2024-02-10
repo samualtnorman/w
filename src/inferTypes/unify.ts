@@ -1,11 +1,10 @@
-import { TypeTag, type Type } from "../Type"
-import type { TypeAnnotation } from "../inferTypes"
+import { TypeTag, type Substitution, type Type } from "../Type"
 import { typeToString } from "../typeToString"
 import { composeSubstitutions } from "./composeSubstitutions"
 import { contains } from "./contains"
 import { typeApplySubstitution } from "./typeApplySubstitution"
 
-export function unify(a: Type, b: Type): TypeAnnotation {
+export function unify(a: Type, b: Type): { type: Type, substitution: Substitution } {
 	if (a.tag == TypeTag.TypeVariable) {
 		if (b.tag == TypeTag.TypeVariable && a.name == b.name)
 			return { type: a, substitution: {} }

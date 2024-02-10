@@ -1,12 +1,10 @@
 import Cuid2 from "@paralleldrive/cuid2"
 import { TypeTag } from "./Type"
-import type { AnnotatedExression } from "./inferTypes"
 import { ExpressionTag, type Expression } from "./parse"
+import { TypedExpression } from "./inferTypes"
 
-export function downLevel(
-	expression: AnnotatedExression,
-	environment: Record<string, AnnotatedExression> = {}
-): AnnotatedExression {
+export function downLevel(expression: TypedExpression, environment: Record<string, TypedExpression> = {})
+: TypedExpression {
 	if (expression.tag == ExpressionTag.Identifier)
 		return environment[expression.name] || expression
 

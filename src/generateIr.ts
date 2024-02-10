@@ -1,5 +1,5 @@
-import { FunctionType, IntType } from "./Type"
-import { type AnnotatedExression, type TypeAnnotation } from "./inferTypes"
+import { FunctionType, IntType, type Type } from "./Type"
+import type { TypedExpression } from "./inferTypes"
 import { unify } from "./inferTypes/unify"
 import { ExpressionTag, type AbstractionExpression } from "./parse"
 
@@ -31,7 +31,7 @@ export const SetLocalIr = (index: number, value: ExpressionIr): SetLocalIr => ({
 export const BlockIr = (children: ExpressionIr[], name?: string): BlockIr => ({ tag: `Block`, children, name })
 export const I32AddIr = (left: ExpressionIr, right: ExpressionIr): I32AddIr => ({ tag: `I32Add`, left, right })
 
-export function generateIr(downLeveledExpression: AbstractionExpression<TypeAnnotation>): IrModule {
+export function generateIr(downLeveledExpression: AbstractionExpression<{ type: Type }>): IrModule {
 	unify(downLeveledExpression.type, FunctionType(IntType, IntType))
 
 	const locals: TypeIr[] = []
@@ -49,7 +49,7 @@ export function generateIr(downLeveledExpression: AbstractionExpression<TypeAnno
 	]
 
 	function generateExpressionIr(
-		expression: AnnotatedExression,
+		expression: TypedExpression,
 		nameToIndexes: Record<string, number>
 	): ExpressionIr[] {
 		switch (expression.tag) {

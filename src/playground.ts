@@ -1,17 +1,23 @@
 import { inspect } from "util"
+import { FunctionType, IntType, TypeSchemeType, type Type } from "./Type"
 import { downLevel } from "./downLevel"
 import { generateBinaryenModule } from "./generateBinaryenModule"
 import { generateIr } from "./generateIr"
-import { inferTypes, type TypeAnnotation } from "./inferTypes"
+import { inferTypes } from "./inferTypes"
 import { expressionToSource, expressionToString, parse, type AbstractionExpression } from "./parse"
 import { substitutionToString } from "./substitutionToString"
 import { tokenise } from "./tokenise"
-import { FunctionType, IntType, TypeSchemeType } from "./Type"
 import { typeToString } from "./typeToString"
 
 try {
 	const source = `
-		arg -> arg + arg
+		let rec fibonacci = n ->
+			if n < 2 then
+				n
+			else
+				(fibonacci (n - 1)) + (fibonacci (n - 2))
+			in
+		fibonacci
 	`
 
 	const tokens = [ ...tokenise(source) ]
@@ -21,16 +27,16 @@ try {
 	console.log(expressionToSource(ast))
 	console.log()
 
-	const typedAst = inferTypes(ast, {
+	const { substitution, ...typedAst } = inferTypes(ast, {
 		add: TypeSchemeType([], FunctionType(IntType, FunctionType(IntType, IntType)))
 	})
 
-	console.log(`Annotated AST:`)
+	console.log(`Typed AST:`)
 	console.log(expressionToString(typedAst))
 	console.log()
 
 	console.log("Substitution:")
-	console.log(substitutionToString(typedAst.substitution))
+	console.log(substitutionToString(substitution))
 	console.log()
 
 	console.log("Type:")
@@ -43,7 +49,7 @@ try {
 	console.log(expressionToSource(downLeveledAst))
 	console.log()
 
-	const irModule = generateIr(downLeveledAst as AbstractionExpression<TypeAnnotation>)
+	const irModule = generateIr(downLeveledAst as AbstractionExpression<{ type: Type }>)
 
 	console.log("IR:")
 	console.log(inspect(irModule, { depth: Infinity, colors: true }))
