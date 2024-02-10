@@ -182,15 +182,19 @@ export function inferTypes(expression: Expression, typeEnvironment: TypeEnvironm
 
 			const { substitution: valueSubstitution, ...value } = inferTypes(
 				expression.value,
-				{ ...typeEnvironment, [expression.name]: TypeSchemeType([ typeVariableType.name ], typeVariableType) }
+				{ ...typeEnvironment, [expression.name]: TypeSchemeType([], typeVariableType) }
 			)
+
+			const unifiedValue = unify(value.type, typeApplySubstitution(typeVariableType, valueSubstitution))
+			value.type = unifiedValue.type
+			let substitution = composeSubstitutions(unifiedValue.substitution, valueSubstitution)
 
 			const typeFreeTypeVariables = new Set<string>
 			findTypeFreeTypeVariables(value.type, typeFreeTypeVariables)
 			const typeEnvironmentFreeTypeVariables = new Set<string>
 
 			for (const typeSchemeType of
-				Object.values(typeEnvironmentApplySubstitution(typeEnvironment, valueSubstitution))
+				Object.values(typeEnvironmentApplySubstitution(typeEnvironment, substitution))
 			)
 				findTypeFreeTypeVariables(typeSchemeType, typeEnvironmentFreeTypeVariables)
 
@@ -202,14 +206,14 @@ export function inferTypes(expression: Expression, typeEnvironment: TypeEnvironm
 				typeEnvironmentApplySubstitution({
 					...typeEnvironment,
 					[expression.name]: TypeSchemeType([ ...typeFreeTypeVariables ], value.type)
-				}, valueSubstitution)
+				}, substitution)
 			)
 
 			return {
 				...expression,
 				value,
 				body,
-				substitution: composeSubstitutions(valueSubstitution, bodySubstitution),
+				substitution: composeSubstitutions(substitution, bodySubstitution),
 				type: body.type
 			}
 		}

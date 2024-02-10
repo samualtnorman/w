@@ -1,14 +1,14 @@
 import { TypeTag, type BoolType, type FunctionType, type IntType, type Substitution } from "./Type"
 import type { TypedExpression } from "./inferTypes"
 import { typeApplySubstitution } from "./inferTypes/typeApplySubstitution"
-import { Expression, ExpressionTag } from "./parse"
-import { assert } from "@samual/lib/assert"
+import { Expression, ExpressionTag, expressionToSource } from "./parse"
 
 export function expressionApplySubstitution(expression: TypedExpression, substitution: Substitution)
 : Expression<{ type: BoolType | IntType | FunctionType }> {
 	const type = typeApplySubstitution(expression.type, substitution)
 
-	assert(type.tag != TypeTag.TypeVariable, HERE)
+	if (type.tag == TypeTag.TypeVariable)
+		throw Error(`Could not infer type of "${expressionToSource(expression)}"`)
 
 	switch (expression.tag) {
 		case ExpressionTag.RecursiveLet: {

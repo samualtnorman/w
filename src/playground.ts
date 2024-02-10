@@ -6,13 +6,14 @@ import { tokenise } from "./tokenise"
 
 try {
 	const source = `
-		let rec fibonacci = n ->
-			if n < 2 then
-				n
-			else
-				(fibonacci (n - 1)) + (fibonacci (n - 2))
+		let rec fib =
+			n ->
+				if n < 2 then
+					n
+				else
+					(fib (n - 2)) + (fib (n - 1))
 			in
-		fibonacci
+		fib
 	`
 
 	const tokens = [ ...tokenise(source) ]
