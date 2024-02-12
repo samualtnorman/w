@@ -1,8 +1,6 @@
 import { BoolType, FunctionType, IntType, TypeSchemeType, TypeVariableType, type Substitution, type Type } from "./Type"
 import { composeSubstitutions } from "./inferTypes/composeSubstitutions"
 import { findTypeFreeTypeVariables } from "./inferTypes/findTypeFreeTypeVariables"
-import { typeApplySubstitution } from "./inferTypes/typeApplySubstitution"
-import { typeEnvironmentApplySubstitution } from "./inferTypes/typeEnvironmentApplySubstitution"
 import { unify } from "./inferTypes/unify"
 import { ExpressionTag, type Expression } from "./parse"
 
@@ -30,7 +28,7 @@ export function inferTypes(expression: Expression, typeEnvironment: TypeEnvironm
 			for (const name of variable.bound)
 				substitution[name] = TypeVariableType()
 
-			return { ...expression, type: typeApplySubstitution(variable.type, substitution), substitution: {} }
+			return { ...expression, type: variable.type, substitution: {} }
 		}
 
 		case ExpressionTag.Abstraction: {
@@ -41,31 +39,22 @@ export function inferTypes(expression: Expression, typeEnvironment: TypeEnvironm
 				{ ...typeEnvironment, [expression.argumentName]: TypeSchemeType([], argumentType) }
 			)
 
-			return {
-				...expression,
-				body,
-				type: FunctionType(typeApplySubstitution(argumentType, substitution), body.type),
-				substitution
-			}
+			return { ...expression, body, type: FunctionType(argumentType, body.type), substitution }
 		}
 
 		case ExpressionTag.Application: {
 			const returnType = TypeVariableType()
 			const { substitution: calleeSubstitution, ...callee } = inferTypes(expression.callee, typeEnvironment)
+			const { substitution: argumentSubstitution, ...argument } = inferTypes(expression.argument, typeEnvironment)
 
-			const { substitution: argumentSubstitution, ...argument } =
-				inferTypes(expression.argument, typeEnvironmentApplySubstitution(typeEnvironment, calleeSubstitution))
-
-			const { type: calleeType, substitution: applicationSubstitution } = unify(
-				typeApplySubstitution(callee.type, argumentSubstitution),
-				FunctionType(argument.type, returnType)
-			)
+			const { type: calleeType, substitution: applicationSubstitution } =
+				unify(callee.type, FunctionType(argument.type, returnType))
 
 			return {
 				...expression,
 				callee: { ...callee, type: calleeType },
 				argument,
-				type: typeApplySubstitution(returnType, applicationSubstitution),
+				type: returnType,
 				substitution: composeSubstitutions(
 					applicationSubstitution,
 					composeSubstitutions(argumentSubstitution, calleeSubstitution)
@@ -76,14 +65,10 @@ export function inferTypes(expression: Expression, typeEnvironment: TypeEnvironm
 		case ExpressionTag.Let: {
 			const { substitution: valueSubstitution, ...value } = inferTypes(expression.value, typeEnvironment)
 			const typeFreeTypeVariables = new Set<string>
-
 			findTypeFreeTypeVariables(value.type, typeFreeTypeVariables)
-
 			const typeEnvironmentFreeTypeVariables = new Set<string>
 
-			for (const typeSchemeType of
-				Object.values(typeEnvironmentApplySubstitution(typeEnvironment, valueSubstitution))
-			)
+			for (const typeSchemeType of Object.values(typeEnvironment))
 				findTypeFreeTypeVariables(typeSchemeType, typeEnvironmentFreeTypeVariables)
 
 			for (const variable of typeEnvironmentFreeTypeVariables)
@@ -91,10 +76,7 @@ export function inferTypes(expression: Expression, typeEnvironment: TypeEnvironm
 
 			const { substitution: bodySubstitution, ...body } = inferTypes(
 				expression.body,
-				typeEnvironmentApplySubstitution({
-					...typeEnvironment,
-					[expression.name]: TypeSchemeType([ ...typeFreeTypeVariables ], value.type)
-				}, valueSubstitution)
+				{ ...typeEnvironment, [expression.name]: TypeSchemeType([ ...typeFreeTypeVariables ], value.type) }
 			)
 
 			return {
@@ -111,10 +93,7 @@ export function inferTypes(expression: Expression, typeEnvironment: TypeEnvironm
 			const { substitution: leftSubstitution, ...left } = inferTypes(expression.left, typeEnvironment)
 			const leftUnified = unify(left.type, IntType)
 			let substitution = composeSubstitutions(leftUnified.substitution, leftSubstitution)
-
-			const { substitution: rightSubstitution, ...right } =
-				inferTypes(expression.right, typeEnvironmentApplySubstitution(typeEnvironment, substitution))
-
+			const { substitution: rightSubstitution, ...right } = inferTypes(expression.right, typeEnvironment)
 			substitution = composeSubstitutions(rightSubstitution, substitution)
 			const rightUnified = unify(right.type, IntType)
 
@@ -133,17 +112,10 @@ export function inferTypes(expression: Expression, typeEnvironment: TypeEnvironm
 
 			const conditionUnified = unify(condition.type, BoolType)
 			let substitution = composeSubstitutions(conditionUnified.substitution, conditionSubstitution)
-
-			const { substitution: thenSubstitution, ...then } =
-				inferTypes(expression.then, typeEnvironmentApplySubstitution(typeEnvironment, substitution))
-
+			const { substitution: thenSubstitution, ...then } = inferTypes(expression.then, typeEnvironment)
 			substitution = composeSubstitutions(thenSubstitution, substitution)
-
-			const { substitution: elseSubstitution, ...else_ } =
-				inferTypes(expression.else, typeEnvironmentApplySubstitution(typeEnvironment, substitution))
-
+			const { substitution: elseSubstitution, ...else_ } = inferTypes(expression.else, typeEnvironment)
 			substitution = composeSubstitutions(elseSubstitution, substitution)
-
 			const ifElseUnified = unify(then.type, else_.type)
 
 			return {
@@ -160,12 +132,8 @@ export function inferTypes(expression: Expression, typeEnvironment: TypeEnvironm
 			const { substitution: leftSubstitution, ...left } = inferTypes(expression.left, typeEnvironment)
 			const leftUnified = unify(left.type, IntType)
 			let substitution = composeSubstitutions(leftUnified.substitution, leftSubstitution)
-
-			const { substitution: rightSubstitution, ...right } =
-				inferTypes(expression.right, typeEnvironmentApplySubstitution(typeEnvironment, substitution))
-
+			const { substitution: rightSubstitution, ...right } = inferTypes(expression.right, typeEnvironment)
 			substitution = composeSubstitutions(rightSubstitution, substitution)
-
 			const rightUnified = unify(right.type, IntType)
 
 			return {
@@ -185,17 +153,14 @@ export function inferTypes(expression: Expression, typeEnvironment: TypeEnvironm
 				{ ...typeEnvironment, [expression.name]: TypeSchemeType([], typeVariableType) }
 			)
 
-			const unifiedValue = unify(value.type, typeApplySubstitution(typeVariableType, valueSubstitution))
+			const unifiedValue = unify(value.type, typeVariableType)
 			value.type = unifiedValue.type
 			let substitution = composeSubstitutions(unifiedValue.substitution, valueSubstitution)
-
 			const typeFreeTypeVariables = new Set<string>
 			findTypeFreeTypeVariables(value.type, typeFreeTypeVariables)
 			const typeEnvironmentFreeTypeVariables = new Set<string>
 
-			for (const typeSchemeType of
-				Object.values(typeEnvironmentApplySubstitution(typeEnvironment, substitution))
-			)
+			for (const typeSchemeType of Object.values(typeEnvironment))
 				findTypeFreeTypeVariables(typeSchemeType, typeEnvironmentFreeTypeVariables)
 
 			for (const variable of typeEnvironmentFreeTypeVariables)
@@ -203,10 +168,7 @@ export function inferTypes(expression: Expression, typeEnvironment: TypeEnvironm
 
 			const { substitution: bodySubstitution, ...body } = inferTypes(
 				expression.body,
-				typeEnvironmentApplySubstitution({
-					...typeEnvironment,
-					[expression.name]: TypeSchemeType([ ...typeFreeTypeVariables ], value.type)
-				}, substitution)
+				{ ...typeEnvironment, [expression.name]: TypeSchemeType([ ...typeFreeTypeVariables ], value.type) }
 			)
 
 			return {
