@@ -91,18 +91,23 @@ export function inferTypes(expression: Expression, typeEnvironment: TypeEnvironm
 		case ExpressionTag.Add:
 		case ExpressionTag.Minus: {
 			const { substitution: leftSubstitution, ...left } = inferTypes(expression.left, typeEnvironment)
-			const leftUnified = unify(left.type, IntType)
-			let substitution = composeSubstitutions(leftUnified.substitution, leftSubstitution)
 			const { substitution: rightSubstitution, ...right } = inferTypes(expression.right, typeEnvironment)
-			substitution = composeSubstitutions(rightSubstitution, substitution)
-			const rightUnified = unify(right.type, IntType)
 
 			return {
 				...expression,
 				left,
 				right,
 				type: IntType,
-				substitution: composeSubstitutions(rightUnified.substitution, substitution)
+				substitution: composeSubstitutions(
+					unify(right.type, IntType).substitution,
+					composeSubstitutions(
+						rightSubstitution,
+						composeSubstitutions(
+							unify(left.type, IntType).substitution,
+							leftSubstitution
+						)
+					)
+				)
 			}
 		}
 
@@ -110,12 +115,8 @@ export function inferTypes(expression: Expression, typeEnvironment: TypeEnvironm
 			const { substitution: conditionSubstitution, ...condition } =
 				inferTypes(expression.condition, typeEnvironment)
 
-			const conditionUnified = unify(condition.type, BoolType)
-			let substitution = composeSubstitutions(conditionUnified.substitution, conditionSubstitution)
 			const { substitution: thenSubstitution, ...then } = inferTypes(expression.then, typeEnvironment)
-			substitution = composeSubstitutions(thenSubstitution, substitution)
 			const { substitution: elseSubstitution, ...else_ } = inferTypes(expression.else, typeEnvironment)
-			substitution = composeSubstitutions(elseSubstitution, substitution)
 			const ifElseUnified = unify(then.type, else_.type)
 
 			return {
@@ -124,24 +125,35 @@ export function inferTypes(expression: Expression, typeEnvironment: TypeEnvironm
 				then,
 				else: else_,
 				type: ifElseUnified.type,
-				substitution: composeSubstitutions(ifElseUnified.substitution, substitution)
+				substitution: composeSubstitutions(
+					ifElseUnified.substitution,
+					composeSubstitutions(
+						elseSubstitution,
+						composeSubstitutions(
+							thenSubstitution,
+							composeSubstitutions(unify(condition.type, BoolType).substitution, conditionSubstitution)
+						)
+					)
+				)
 			}
 		}
 
 		case ExpressionTag.LessThan: {
 			const { substitution: leftSubstitution, ...left } = inferTypes(expression.left, typeEnvironment)
-			const leftUnified = unify(left.type, IntType)
-			let substitution = composeSubstitutions(leftUnified.substitution, leftSubstitution)
 			const { substitution: rightSubstitution, ...right } = inferTypes(expression.right, typeEnvironment)
-			substitution = composeSubstitutions(rightSubstitution, substitution)
-			const rightUnified = unify(right.type, IntType)
 
 			return {
 				...expression,
 				left,
 				right,
 				type: BoolType,
-				substitution: composeSubstitutions(rightUnified.substitution, substitution)
+				substitution: composeSubstitutions(
+					unify(right.type, IntType).substitution,
+					composeSubstitutions(
+						rightSubstitution,
+						composeSubstitutions(unify(left.type, IntType).substitution, leftSubstitution)
+					)
+				)
 			}
 		}
 
@@ -155,7 +167,6 @@ export function inferTypes(expression: Expression, typeEnvironment: TypeEnvironm
 
 			const unifiedValue = unify(value.type, typeVariableType)
 			value.type = unifiedValue.type
-			let substitution = composeSubstitutions(unifiedValue.substitution, valueSubstitution)
 			const typeFreeTypeVariables = new Set<string>
 			findTypeFreeTypeVariables(value.type, typeFreeTypeVariables)
 			const typeEnvironmentFreeTypeVariables = new Set<string>
@@ -175,7 +186,10 @@ export function inferTypes(expression: Expression, typeEnvironment: TypeEnvironm
 				...expression,
 				value,
 				body,
-				substitution: composeSubstitutions(substitution, bodySubstitution),
+				substitution: composeSubstitutions(
+					composeSubstitutions(unifiedValue.substitution, valueSubstitution),
+					bodySubstitution
+				),
 				type: body.type
 			}
 		}
