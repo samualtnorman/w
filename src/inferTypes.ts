@@ -1,6 +1,6 @@
-import { BoolType, FunctionType, IntType, TypeSchemeType, TypeVariableType, type Substitution, type Type } from "./Type"
+import { BoolType, FunctionType, IntType, PlaceholderType, TypeSchemeType, type Substitution, type Type } from "./Type"
 import { composeSubstitutions } from "./inferTypes/composeSubstitutions"
-import { findTypeFreeTypeVariables } from "./inferTypes/findTypeFreeTypeVariables"
+import { findTypeFreePlaceholders } from "./inferTypes/findTypeFreePlaceholders"
 import { unify } from "./inferTypes/unify"
 import { ExpressionTag, type Expression } from "./parse"
 
@@ -26,13 +26,13 @@ export function inferTypes(expression: Expression, typeEnvironment: TypeEnvironm
 			const substitution: Substitution = {}
 
 			for (const name of variable.bound)
-				substitution[name] = TypeVariableType()
+				substitution[name] = PlaceholderType()
 
 			return { ...expression, type: variable.type, substitution: {} }
 		}
 
 		case ExpressionTag.Abstraction: {
-			const argumentType: Type = TypeVariableType()
+			const argumentType: Type = PlaceholderType()
 
 			const { substitution, ...body } = inferTypes(
 				expression.body,
@@ -43,7 +43,7 @@ export function inferTypes(expression: Expression, typeEnvironment: TypeEnvironm
 		}
 
 		case ExpressionTag.Application: {
-			const returnType = TypeVariableType()
+			const returnType = PlaceholderType()
 			const { substitution: calleeSubstitution, ...callee } = inferTypes(expression.callee, typeEnvironment)
 			const { substitution: argumentSubstitution, ...argument } = inferTypes(expression.argument, typeEnvironment)
 
@@ -64,19 +64,19 @@ export function inferTypes(expression: Expression, typeEnvironment: TypeEnvironm
 
 		case ExpressionTag.Let: {
 			const { substitution: valueSubstitution, ...value } = inferTypes(expression.value, typeEnvironment)
-			const typeFreeTypeVariables = new Set<string>
-			findTypeFreeTypeVariables(value.type, typeFreeTypeVariables)
-			const typeEnvironmentFreeTypeVariables = new Set<string>
+			const typeFreePlaceholders = new Set<string>
+			findTypeFreePlaceholders(value.type, typeFreePlaceholders)
+			const typeEnvironmentFreePlaceholders = new Set<string>
 
 			for (const typeSchemeType of Object.values(typeEnvironment))
-				findTypeFreeTypeVariables(typeSchemeType, typeEnvironmentFreeTypeVariables)
+				findTypeFreePlaceholders(typeSchemeType, typeEnvironmentFreePlaceholders)
 
-			for (const variable of typeEnvironmentFreeTypeVariables)
-				typeFreeTypeVariables.delete(variable)
+			for (const variable of typeEnvironmentFreePlaceholders)
+				typeFreePlaceholders.delete(variable)
 
 			const { substitution: bodySubstitution, ...body } = inferTypes(
 				expression.body,
-				{ ...typeEnvironment, [expression.name]: TypeSchemeType([ ...typeFreeTypeVariables ], value.type) }
+				{ ...typeEnvironment, [expression.name]: TypeSchemeType([ ...typeFreePlaceholders ], value.type) }
 			)
 
 			return {
@@ -158,28 +158,28 @@ export function inferTypes(expression: Expression, typeEnvironment: TypeEnvironm
 		}
 
 		case ExpressionTag.RecursiveLet: {
-			const typeVariableType = TypeVariableType()
+			const placeholderType = PlaceholderType()
 
 			const { substitution: valueSubstitution, ...value } = inferTypes(
 				expression.value,
-				{ ...typeEnvironment, [expression.name]: TypeSchemeType([], typeVariableType) }
+				{ ...typeEnvironment, [expression.name]: TypeSchemeType([], placeholderType) }
 			)
 
-			const unifiedValue = unify(value.type, typeVariableType)
+			const unifiedValue = unify(value.type, placeholderType)
 			value.type = unifiedValue.type
-			const typeFreeTypeVariables = new Set<string>
-			findTypeFreeTypeVariables(value.type, typeFreeTypeVariables)
-			const typeEnvironmentFreeTypeVariables = new Set<string>
+			const typeFreePlaceholders = new Set<string>
+			findTypeFreePlaceholders(value.type, typeFreePlaceholders)
+			const typeEnvironmentFreePlaceholders = new Set<string>
 
 			for (const typeSchemeType of Object.values(typeEnvironment))
-				findTypeFreeTypeVariables(typeSchemeType, typeEnvironmentFreeTypeVariables)
+				findTypeFreePlaceholders(typeSchemeType, typeEnvironmentFreePlaceholders)
 
-			for (const variable of typeEnvironmentFreeTypeVariables)
-				typeFreeTypeVariables.delete(variable)
+			for (const variable of typeEnvironmentFreePlaceholders)
+				typeFreePlaceholders.delete(variable)
 
 			const { substitution: bodySubstitution, ...body } = inferTypes(
 				expression.body,
-				{ ...typeEnvironment, [expression.name]: TypeSchemeType([ ...typeFreeTypeVariables ], value.type) }
+				{ ...typeEnvironment, [expression.name]: TypeSchemeType([ ...typeFreePlaceholders ], value.type) }
 			)
 
 			return {

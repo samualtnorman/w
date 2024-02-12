@@ -8,7 +8,7 @@ export function typeToString(type: Type | TypeSchemeType): string {
 		case TypeTag.Int:
 			return "int"
 
-		case TypeTag.TypeVariable:
+		case TypeTag.Placeholder:
 			return type.name
 
 		case TypeTag.Function: {

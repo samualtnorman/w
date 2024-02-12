@@ -5,8 +5,8 @@ import { contains } from "./contains"
 import { typeApplySubstitution } from "./typeApplySubstitution"
 
 export function unify(a: Type, b: Type): { type: Type, substitution: Substitution } {
-	if (a.tag == TypeTag.TypeVariable) {
-		if (b.tag == TypeTag.TypeVariable && a.name == b.name)
+	if (a.tag == TypeTag.Placeholder) {
+		if (b.tag == TypeTag.Placeholder && a.name == b.name)
 			return { type: a, substitution: {} }
 
 		if (contains(b, a))
@@ -24,7 +24,7 @@ export function unify(a: Type, b: Type): { type: Type, substitution: Substitutio
 			throw Error(`Cannot unify ${typeToString(a)} and ${typeToString(b)}`)
 		}
 
-		case TypeTag.TypeVariable: {
+		case TypeTag.Placeholder: {
 			if (contains(a, b))
 				throw Error(`Infinite type ${b.name}: ${typeToString(a)}`)
 

@@ -6,8 +6,8 @@ export function contains(haystack: Type | TypeSchemeType, needle: Type): boolean
 		case TypeTag.Int:
 			return haystack.tag == needle.tag
 
-		case TypeTag.TypeVariable:
-			return needle.tag == TypeTag.TypeVariable && needle.name == haystack.name
+		case TypeTag.Placeholder:
+			return needle.tag == TypeTag.Placeholder && needle.name == haystack.name
 
 		case TypeTag.Function:
 			return contains(haystack.argument, needle) || contains(haystack.return, needle)

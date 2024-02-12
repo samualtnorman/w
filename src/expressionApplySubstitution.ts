@@ -7,7 +7,7 @@ export function expressionApplySubstitution(expression: TypedExpression, substit
 : Expression<{ type: BoolType | IntType | FunctionType }> {
 	const type = typeApplySubstitution(expression.type, substitution)
 
-	if (type.tag == TypeTag.TypeVariable)
+	if (type.tag == TypeTag.Placeholder)
 		throw Error(`Could not infer type of "${expressionToSource(expression)}"`)
 
 	switch (expression.tag) {

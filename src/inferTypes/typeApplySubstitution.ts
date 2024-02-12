@@ -6,7 +6,7 @@ export function typeApplySubstitution(type: Type, substitution: Substitution): T
 		case TypeTag.Int:
 			return type
 
-		case TypeTag.TypeVariable:
+		case TypeTag.Placeholder:
 			return substitution[type.name] || type
 
 		case TypeTag.Function: {
