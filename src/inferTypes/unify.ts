@@ -2,7 +2,6 @@ import { TypeTag, type Substitution, type Type } from "../Type"
 import { typeToString } from "../typeToString"
 import { composeSubstitutions } from "./composeSubstitutions"
 import { contains } from "./contains"
-import { typeApplySubstitution } from "./typeApplySubstitution"
 
 export function unify(a: Type, b: Type): { type: Type, substitution: Substitution } {
 	if (a.tag == TypeTag.Placeholder) {
@@ -35,16 +34,13 @@ export function unify(a: Type, b: Type): { type: Type, substitution: Substitutio
 			if (a.tag != TypeTag.Function)
 				throw Error(`Cannot unify ${typeToString(a)} and ${typeToString(b)}`)
 
-			const argumentType = unify(a.argument, b.argument)
-
-			const returnType = unify(
-				typeApplySubstitution(a.return, argumentType.substitution),
-				typeApplySubstitution(b.return, argumentType.substitution)
-			)
-
-			const substitution = composeSubstitutions(argumentType.substitution, returnType.substitution)
-
-			return { type: typeApplySubstitution(a, substitution), substitution }
+			return {
+				type: a,
+				substitution: composeSubstitutions(
+					unify(a.argument, b.argument).substitution,
+					unify(a.return, b.return).substitution
+				)
+			}
 		}
 	}
 }
