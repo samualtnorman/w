@@ -4,9 +4,9 @@
 		"@rollup/plugin-babel": "^6.0.4",
 		"@rollup/plugin-node-resolve": "^15.2.3",
 		"@total-typescript/ts-reset": "^0.5.1",
-		"@types/node": "^20.11.17",
-		"babel-plugin-here": "^0.0.1",
-		"rollup": "^4.10.0",
+		"@types/node": "^20.11.18",
+		"babel-plugin-here": "^1.0.0",
+		"rollup": "^4.11.0",
 		"typescript": "^5.3.3"
 	},
 	"dependencies": {

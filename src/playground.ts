@@ -1,19 +1,19 @@
 import { FunctionType, IntType, TypeSchemeType } from "./Type"
-import { expressionApplySubstitution } from "./expressionApplySubstitution"
 import { inferTypes } from "./inferTypes"
 import { expressionToString, parse } from "./parse"
+import { substitutionToString } from "./substitutionToString"
 import { tokenise } from "./tokenise"
 
 try {
 	const source = `
-		let rec fib =
-			n ->
-				if n < 2 then
-					n
+		let rec foo =
+			bar ->
+				if bar then
+					foo 0
 				else
-					(fib (n - 2)) + (fib (n - 1))
+					0
 			in
-		fib
+		foo
 	`
 
 	const tokens = [ ...tokenise(source) ]
@@ -27,19 +27,19 @@ try {
 		add: TypeSchemeType([], FunctionType(IntType, FunctionType(IntType, IntType)))
 	})
 
-	// console.log(`Typed AST:`)
-	// console.log(expressionToString(typedAst))
-	// console.log()
-
-	// console.log("Substitution:")
-	// console.log(substitutionToString(substitution))
-	// console.log()
-
-	const fullyTypedAst = expressionApplySubstitution(typedAst, substitution)
-
-	console.log("Fully Typed AST:")
-	console.log(expressionToString(fullyTypedAst))
+	console.log(`Typed AST:`)
+	console.log(expressionToString(typedAst))
 	console.log()
+
+	console.log("Substitution:")
+	console.log(substitutionToString(substitution))
+	console.log()
+
+	// const fullyTypedAst = expressionApplySubstitution(typedAst, substitution)
+
+	// console.log("Fully Typed AST:")
+	// console.log(expressionToString(fullyTypedAst))
+	// console.log()
 
 	// console.log("Type:")
 	// console.log(typeToString(typedAst.type))

@@ -1,4 +1,4 @@
-#!rollup --config
+#!node_modules/.bin/rollup --config
 import babelPresetTypescript from "@babel/preset-typescript"
 import { babel } from "@rollup/plugin-babel"
 import { nodeResolve } from "@rollup/plugin-node-resolve"
