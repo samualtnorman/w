@@ -1,6 +1,6 @@
 export enum TokenTag {
 	Integer = 1, True, False, Identifier, Dot, Let, Equals, In, OpenBracket, CloseBracket, RightArrow, LessThan,
-	Minus, Add, Recursive, If, Then, Else, Function, Newline
+	Minus, Add, Recursive, If, Then, Else, Function, Newline, Return
 }
 
 export type DataTokenTag = TokenTag.Integer | TokenTag.Identifier | TokenTag.Newline
@@ -12,6 +12,7 @@ export type Location = { index: number, line: number, column: number, length: nu
 
 export const NonDataTokenDefinitions: { regex: RegExp, tag: NonDataTokenTag }[] = [
 	{ regex: /^function\b/, tag: TokenTag.Function },
+	{ regex: /^return\b/, tag: TokenTag.Return },
 	{ regex: /^if\b/, tag: TokenTag.If },
 	{ regex: /^then\b/, tag: TokenTag.Then },
 	{ regex: /^else\b/, tag: TokenTag.Else },

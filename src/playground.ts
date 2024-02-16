@@ -5,6 +5,8 @@ import { generateIr } from "./generateIr"
 import { inferTypes } from "./inferTypes"
 import { expressionToString, parse } from "./parse"
 import { TokenTag, tokenise } from "./tokenise"
+import { spliceString } from "@samual/lib/spliceString"
+import chalk, { ChalkInstance } from "chalk"
 
 try {
 	const source = `\
@@ -19,6 +21,36 @@ function fibonacci n
 		`${data == undefined ? TokenTag[tag] : `${TokenTag[tag]} ${JSON.stringify(data)}`} :${line}:${column}`
 	).join("\n"))
 
+	console.log()
+
+	let highlightedSource = source
+
+	const tokensToChalkInstances: { [K in TokenTag]?: ChalkInstance } = {
+		[TokenTag.Function]: chalk.magenta,
+		[TokenTag.Return]: chalk.magenta,
+		[TokenTag.If]: chalk.magenta,
+		[TokenTag.Else]: chalk.magenta,
+		[TokenTag.Identifier]: chalk.red,
+		[TokenTag.Integer]: chalk.yellow,
+		[TokenTag.LessThan]: chalk.cyan,
+		[TokenTag.Add]: chalk.cyan,
+		[TokenTag.Minus]: chalk.cyan,
+	}
+
+	for (const token of [ ...tokens ].reverse()) {
+		const chalkInstance = tokensToChalkInstances[token.tag]
+
+		if (chalkInstance) {
+			highlightedSource = spliceString(
+				highlightedSource,
+				chalkInstance(source.slice(token.index, token.index + token.length)),
+				token.index,
+				token.length
+			)
+		}
+	}
+
+	console.log(highlightedSource)
 	console.log()
 
 	const ast = parse(tokens)
