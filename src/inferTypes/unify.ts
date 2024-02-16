@@ -1,9 +1,12 @@
+import chalk from "chalk"
 import { TypeTag, type Substitution, type Type } from "../Type"
 import { typeToString } from "../typeToString"
 import { composeSubstitutions } from "./composeSubstitutions"
 import { contains } from "./contains"
 
 export function unify(a: Type, b: Type): { type: Type, substitution: Substitution } {
+	console.debug(chalk.magenta(`unify(${typeToString(a)}, ${typeToString(b)})`))
+
 	if (a.tag == TypeTag.Placeholder) {
 		if (b.tag == TypeTag.Placeholder && a.name == b.name)
 			return { type: a, substitution: {} }

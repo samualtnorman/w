@@ -1,11 +1,25 @@
+import chalk from "chalk"
 import type { Substitution } from "../Type"
+import { substitutionToString } from "../substitutionToString"
 import { typeApplySubstitution } from "./typeApplySubstitution"
+import { unify } from "./unify"
 
 export function composeSubstitutions(a: Substitution, b: Substitution): Substitution {
-	const substitution: Substitution = { ...b, ...a }
+	console.debug(chalk.yellow(`composeSubstitutions(${substitutionToString(a)}, ${substitutionToString(b)})`))
 
-	for (const placeholder in substitution)
-		substitution[placeholder] = typeApplySubstitution(substitution[placeholder]!, substitution)
+	a = Object.fromEntries(Object.entries(a).map(([ name, type ]) => [ name, typeApplySubstitution(type, b) ]))
+	b = Object.fromEntries(Object.entries(b).map(([ name, type ]) => [ name, typeApplySubstitution(type, a) ]))
+
+	const substitution: Substitution = { ...a, ...b }
+
+	for (const placeholder in a) {
+		if (placeholder in b) {
+			const { type, substitution: substitution_ } = unify(a[placeholder]!, b[placeholder]!)
+
+			console.debug(substitution_)
+			substitution[placeholder] = type
+		}
+	}
 
 	return substitution
 }
