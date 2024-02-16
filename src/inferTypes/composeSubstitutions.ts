@@ -16,7 +16,7 @@ export function composeSubstitutions(a: Substitution, b: Substitution): Substitu
 		if (placeholder in b) {
 			const { type, substitution: substitution_ } = unify(a[placeholder]!, b[placeholder]!)
 
-			console.debug(substitution_)
+			console.debug(HERE, substitution_, substitution)
 			substitution[placeholder] = type
 		}
 	}

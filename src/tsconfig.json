@@ -4,7 +4,7 @@
 		"exactOptionalPropertyTypes": true,
 		"declaration": true,
 		"outDir": "../dist",
-		"types": [ "babel-plugin-here/env" ]
+		"types": [ "node", "babel-plugin-here/env" ]
 	},
 	"include": [ "**/*" ]
 }

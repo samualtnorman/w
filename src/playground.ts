@@ -1,22 +1,26 @@
+import { inspect } from "util"
 import { FunctionType, IntType, TypeSchemeType } from "./Type"
+import { expressionApplySubstitution } from "./expressionApplySubstitution"
+import { generateIr } from "./generateIr"
 import { inferTypes } from "./inferTypes"
 import { expressionToString, parse } from "./parse"
-import { substitutionToString } from "./substitutionToString"
-import { tokenise } from "./tokenise"
+import { TokenTag, tokenise } from "./tokenise"
 
 try {
-	const source = `
-		let rec foo =
-			bar ->
-				if bar then
-					foo 0
-				else
-					0
-			in
-		foo
-	`
+	const source = `\
+function fibonacci n
+	return n if n < 2 else (fibonacci (n - 2)) + (fibonacci (n - 1))`
 
 	const tokens = [ ...tokenise(source) ]
+
+	console.log(`Tokens:`)
+
+	console.log(tokens.map(({ tag, data, line, column }) =>
+		`${data == undefined ? TokenTag[tag] : `${TokenTag[tag]} ${JSON.stringify(data)}`} :${line}:${column}`
+	).join("\n"))
+
+	console.log()
+
 	const ast = parse(tokens)
 
 	// console.log(`Formatted Source:`)
@@ -27,19 +31,19 @@ try {
 		add: TypeSchemeType([], FunctionType(IntType, FunctionType(IntType, IntType)))
 	})
 
-	console.log(`Typed AST:`)
-	console.log(expressionToString(typedAst))
-	console.log()
-
-	console.log("Substitution:")
-	console.log(substitutionToString(substitution))
-	console.log()
-
-	// const fullyTypedAst = expressionApplySubstitution(typedAst, substitution)
-
-	// console.log("Fully Typed AST:")
-	// console.log(expressionToString(fullyTypedAst))
+	// console.log(`Typed AST:`)
+	// console.log(expressionToString(typedAst))
 	// console.log()
+
+	// console.log("Substitution:")
+	// console.log(substitutionToString(substitution))
+	// console.log()
+
+	const fullyTypedAst = expressionApplySubstitution(typedAst, substitution)
+
+	console.log("Fully Typed AST:")
+	console.log(expressionToString(fullyTypedAst))
+	console.log()
 
 	// console.log("Type:")
 	// console.log(typeToString(typedAst.type))
@@ -51,11 +55,11 @@ try {
 	// console.log(expressionToSource(downLeveledAst))
 	// console.log()
 
-	// const irModule = generateIr(downLeveledAst as AbstractionExpression<{ type: Type }>)
+	const irModule = generateIr(fullyTypedAst)
 
-	// console.log("IR:")
-	// console.log(inspect(irModule, { depth: Infinity, colors: true }))
-	// console.log()
+	console.log("IR:")
+	console.log(inspect(irModule, { depth: Infinity, colors: true }))
+	console.log()
 
 	// const binaryenModule = generateBinaryenModule(irModule)
 	// const wat = binaryenModule.emitStackIR()
